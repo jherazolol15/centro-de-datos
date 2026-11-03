@@ -130,6 +130,7 @@ async function pedirFotos() {
 addEventListener("online", () => { pedidas.clear(); });
 
 window.cerrarSesion = () => { ls.del("cfg"); ls.del("snap"); location.reload(); };
+window.puenteDT = (body, ms) => puente(body, ms || 60000);
 window.__acceso = () => cfg ? { desde: cfg.desde || "", url: cfg.url } : null;
 
 // ---------- Pantalla de acceso ----------

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d6b43">
+<meta name="robots" content="noindex">
+<title>Mi progreso</title>
+<link rel="manifest" href="manifest-jugador.webmanifest">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{--pitch:#0d6b43;--bg:#f3f8f6;--surface:#fff;--surface-2:#e7f1ee;--ink:#0f2a22;--muted:#53706a;--accent:#0b7a4b;--accent-ink:#fff;--sky:#2ea3d4;--sky-soft:#d6eef8;--border:#cfe0db;
+  --warn:#c98a00;--warn-soft:#fff3d1;--danger:#c3352b;--danger-soft:#fde3e0;--ok:#1f8a4c;--ok-soft:#dcf2e5;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pitch:#0e5c3b;--bg:#0b1714;--surface:#12221d;--surface-2:#1a2f28;--ink:#e8f3ef;--muted:#93b0a8;--accent:#2fbf7a;--accent-ink:#04140d;--sky:#5bc2e7;--sky-soft:#12313d;--border:#24413a;
+  --warn:#f0b429;--warn-soft:#3a2e0a;--danger:#ff6b5e;--danger-soft:#3d1714;--ok:#43c47a;--ok-soft:#143323;color-scheme:dark}}
+:root[data-theme="dark"]{--pitch:#0e5c3b;--bg:#0b1714;--surface:#12221d;--surface-2:#1a2f28;--ink:#e8f3ef;--muted:#93b0a8;--accent:#2fbf7a;--accent-ink:#04140d;--sky:#5bc2e7;--sky-soft:#12313d;--border:#24413a;
+  --warn:#f0b429;--warn-soft:#3a2e0a;--danger:#ff6b5e;--danger-soft:#3d1714;--ok:#43c47a;--ok-soft:#143323;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--pitch)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+[hidden]{display:none!important}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--pitch);color:#fff;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.top-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.top img{width:38px;height:38px;object-fit:contain}
+.top .t{display:flex;flex-direction:column;min-width:0}
+.top b{font-family:var(--display);font-weight:800;font-size:1.25rem;text-transform:uppercase;letter-spacing:.04em;line-height:1}
+.top span{font-size:.78rem;opacity:.85}
+main{max-width:720px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--display);font-weight:800;font-size:1.6rem;text-transform:uppercase;letter-spacing:.03em;margin:0;line-height:1.05}
+h3{font-family:var(--display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:.05em;margin:0}
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:.88rem;margin:0}
+.hero{display:flex;gap:14px;align-items:center}
+.av{width:92px;height:92px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--sky-soft);font-family:var(--display);font-weight:800;font-size:1.8rem;overflow:hidden;border:4px solid var(--accent)}
+.av img{width:100%;height:100%;object-fit:cover}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:10px 8px}
+.kpi b{display:block;font-family:var(--display);font-weight:800;font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2)}
+.li .meta{flex:1;min-width:0;display:flex;flex-direction:column}
+.li .nm{font-weight:700;overflow-wrap:anywhere}
+.li .sub{font-size:.84rem;color:var(--muted)}
+.res{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 6px;border-radius:8px;font-family:var(--display);font-weight:800;color:#fff;flex:none}
+.res.G{background:var(--ok)}.res.E{background:var(--muted)}.res.P{background:var(--danger)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.b{background:var(--sky-soft);color:var(--sky)}.chip.n{background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+.dots{display:flex;flex-wrap:wrap;gap:4px}
+.dots i{width:14px;height:14px;border-radius:4px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.c-Presente{background:var(--ok)}.c-Ausente{background:var(--danger)}.c-Justificado{background:var(--warn)}.c-Lesionado{background:var(--sky)}.c-Otro{background:var(--muted)}
+.tb{display:flex;align-items:flex-end;gap:8px;height:110px}
+.tb div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.78rem;color:var(--muted);min-width:0}
+.tb i{display:block;width:100%;max-width:44px;background:var(--accent);border-radius:6px 6px 0 0}
+.tb b{color:var(--ink);font-variant-numeric:tabular-nums}
+.area{display:grid;grid-template-columns:96px 1fr 26px;align-items:center;gap:8px}
+.sc{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.sc i{height:12px;border-radius:4px;background:var(--surface-2)}.sc i.on{background:var(--accent)}
+.txt span{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.nm-card{display:flex;align-items:center;gap:12px}
+.nm-card .big{font-family:var(--display);font-weight:800;font-size:1.7rem;line-height:1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+label.f input{font-size:1.1rem;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:50px;width:100%}
+.btn{border-radius:12px;min-height:50px;padding:10px 18px;font-weight:700;font-size:1rem;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);cursor:pointer}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.sm{min-height:40px;font-size:.9rem;padding:6px 14px}
+.btn:disabled{opacity:.5}
+.banner{border-radius:12px;padding:10px 12px;font-size:.92rem}
+.banner.err{background:var(--danger-soft);border:1px solid var(--danger)}
+.banner.warn{background:var(--warn-soft);border:1px solid var(--warn)}
+.empty{color:var(--muted);font-size:.92rem;margin:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.more{background:none;border:0;color:var(--sky);font-weight:700;padding:4px 0;cursor:pointer;align-self:flex-start}
+</style>
+</head><body>
+<header class="top"><div class="top-in"><span id="crest"></span><div class="t"><b>Mi progreso</b><span id="club"></span></div></div></header>
+<main id="app"></main>
+<script>
+"use strict";
+const K="mp1:";
+const LS={get(k,d){try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(K+k)}catch(e){}}};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],DIA=["dom","lun","mar","mié","jue","vie","sáb"];
+function pD(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s||""));return m?new Date(+m[3],+m[2]-1,+m[1]):null}
+function dL(d){return d?d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear():""}
+function dS(d){return d?d.getDate()+" "+MES[d.getMonth()]:""}
+function n(v){if(v==null||v==="")return null;const x=Number(String(v).replace(",","."));return isFinite(x)?x:null}
+function f1(x){return x==null?"–":(Math.round(x*10)/10).toLocaleString("es-CO",{maximumFractionDigits:2})}
+function ini(s){const p=String(s||"").split(/\s+/).filter(Boolean);return ((p[0]||"?")[0]+((p[p.length>2?p.length-2:1]||"")[0]||"")).toUpperCase()}
+
+/* Enlace del entrenador: trae la dirección del puente (no está en el código público) */
+(function(){const m=/#p=([^&]+)/.exec(location.hash||"");if(!m)return;try{const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));if(o&&o.url&&/^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/(localhost|127\.0\.0\.1)/.test(o.url))LS.set("url",o.url)}catch(e){}history.replaceState(null,"",location.pathname)})();
+
+const S={url:LS.get("url",""),ses:LS.get("ses",null),d:LS.get("datos",null),fotos:LS.get("fotos",null),err:null,busy:false,offline:false,stamp:LS.get("stamp",0),todos:false};
+let memSes=null;
+const ERR={acceso_invalido:"El documento o el código no son correctos.",bloqueado:"Demasiados intentos fallidos. Espera 15 minutos e intenta de nuevo.",inactivo:"Este acceso no está activo. Habla con el entrenador.",red:"Sin señal o el servidor no respondió. Intenta de nuevo.",operacion_desconocida:"El servicio aún no está listo. Avísale al entrenador."};
+async function pedir(ses,sinFotos){
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),45000);
+  let r;try{r=await fetch(S.url,{method:"POST",body:JSON.stringify({op:"jugDatos",doc:ses.doc,codigo:ses.codigo,sinFotos:!!sinFotos}),signal:ctl.signal}).then(x=>x.json())}catch(e){throw {code:"red"}}finally{clearTimeout(t)}
+  if(!r.ok)throw {code:r.error||"red"};return r;
+}
+function guardar(r,recordar){
+  S.d={jugador:r.jugador,club:r.club,proximo:r.proximo,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
+  if(r.fotos){S.fotos=r.fotos}
+  if(recordar){LS.set("datos",S.d);LS.set("stamp",S.stamp);if(r.fotos)LS.set("fotos",r.fotos)}
+}
+async function entrar(ev){
+  ev.preventDefault();
+  const doc=document.getElementById("doc").value.trim(),codigo=document.getElementById("cod").value.replace(/\D/g,""),rec=document.getElementById("rec").checked;
+  if(!doc||codigo.length!==6){S.err="Escribe el número de documento y el código de 6 dígitos.";render();return}
+  S.busy=true;S.err=null;render();
+  try{const ses={doc,codigo};const r=await pedir(ses,false);if(rec){S.ses=ses;LS.set("ses",ses)}else{memSes=ses;S.ses=null}guardar(r,rec);S.offline=false}
+  catch(e){S.err=ERR[e.code]||ERR.red}
+  S.busy=false;render();
+}
+async function actualizar(){
+  const ses=S.ses||memSes;if(!ses||S.busy)return;
+  S.busy=true;render();
+  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null}
+  catch(e){if(e.code==="acceso_invalido"||e.code==="inactivo"){salir(true);S.err="El código cambió o el acceso ya no está activo. Pide el código nuevo al entrenador.";}else S.offline=true}
+  S.busy=false;render();
+}
+function salir(sil){LS.del("ses");LS.del("datos");LS.del("fotos");LS.del("stamp");S.ses=null;memSes=null;S.d=null;S.fotos=null;if(!sil)render()}
+
+function vLogin(){
+  if(!S.url)return `<section class="sec"><h2>Mi progreso</h2><p>Para entrar, abre el enlace que te envió el entrenador por WhatsApp.</p></section>`;
+  return `<section class="sec"><h2>Mi progreso</h2><p class="hint">Escribe el número de documento del jugador y el código personal que te envió el entrenador.</p>
+   ${S.err?`<div class="banner err">${esc(S.err)}</div>`:""}
+   <form id="login" class="sec" style="border:0;padding:0">
+   <label class="f">Número de documento<input id="doc" inputmode="numeric" autocomplete="username" required></label>
+   <label class="f">Código personal<input id="cod" inputmode="numeric" maxlength="6" autocomplete="current-password" type="password" required></label>
+   <label class="row" style="font-size:.92rem"><input type="checkbox" id="rec" checked style="width:22px;height:22px"> Recordar en este teléfono</label>
+   <button class="btn pri" type="submit" ${S.busy?"disabled":""}>${S.busy?"Entrando…":"Entrar"}</button></form>
+   <p class="hint">Si usas un teléfono prestado, desmarca «Recordar».</p></section>`;
+}
+function vDatos(){
+  const d=S.d,j=d.jugador,foto=S.fotos&&S.fotos.jugador;
+  let h="";
+  if(S.offline)h+=`<div class="banner warn">Sin señal: ves la información guardada el ${esc(dL(new Date(S.stamp)))}.</div>`;
+  if(S.err)h+=`<div class="banner err">${esc(S.err)}</div>`;
+  h+=`<section class="sec"><div class="hero"><span class="av">${foto?`<img src="${foto}" alt="">`:esc(ini(j.nombre))}</span><div><h2>${esc(j.nombre)}</h2><p class="hint" style="font-size:1rem">${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.pos1||"")}${j.pos2?" · "+esc(j.pos2):""}</p></div></div></section>`;
+  // Próximo partido
+  const p=d.proximo,pf=p&&pD(p.fecha);
+  if(p){const hoy=new Date();hoy.setHours(0,0,0,0);const dd=pf?Math.round((pf-hoy)/864e5):null;
+    h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p></div>${dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div></section>`}
+  // Partidos
+  const ps=(d.partidos||[]).slice().sort((a,b)=>(pD(b.fecha)||0)-(pD(a.fecha)||0)),conv=ps.filter(x=>x.convocado),jug=conv.filter(x=>n(x.min)>0);
+  const sum=k=>conv.reduce((a,x)=>a+(n(x[k])||0),0);
+  h+=`<section class="sec"><h3>Mis partidos</h3>${ps.length?`<div class="kpis"><div class="kpi"><b>${conv.length}</b><span>Convocado</span></div><div class="kpi"><b>${jug.length}</b><span>Jugados</span></div><div class="kpi"><b>${conv.filter(x=>x.cond==="Titular"&&n(x.min)>0).length}</b><span>Titular</span></div><div class="kpi"><b>${sum("min")}'</b><span>Minutos</span></div><div class="kpi"><b>${sum("goles")}</b><span>Goles</span></div><div class="kpi"><b>${sum("asist")}</b><span>Asistencias</span></div></div>
+   <div class="list">${ps.slice(0,S.todos?999:6).map(x=>{const gf=n(x.gf),gc=n(x.gc),r=gf>gc?"G":gf<gc?"P":"E",m=n(x.min)||0,extra=[n(x.goles)?x.goles+(n(x.goles)===1?" gol":" goles"):"",n(x.asist)?x.asist+(n(x.asist)===1?" asistencia":" asistencias"):"",n(x.am)?"amarilla":"",n(x.ro)?"roja":""].filter(Boolean).join(" · ");
+     return `<div class="li"><span class="res ${r}">${esc(x.gf)}-${esc(x.gc)}</span><div class="meta"><span class="nm">vs ${esc(x.rival)}</span><span class="sub">${esc(dS(pD(x.fecha)))}${x.comp?" · "+esc(x.comp):""}</span><span class="sub">${!x.convocado?"No convocado":m>0?(x.cond==="Titular"?"Titular":"Ingresó")+" · "+m+"'":"Convocado, no jugó"}${extra?" · "+esc(extra):""}</span></div></div>`}).join("")}</div>
+   ${ps.length>6?`<button class="more" data-a="todos">${S.todos?"Ver menos":"Ver todos ("+ps.length+")"}</button>`:""}`:'<p class="empty">Aún no hay partidos registrados.</p>'}</section>`;
+  // Asistencia
+  const ss=(d.sesiones||[]).slice().sort((a,b)=>(pD(a.fecha)||0)-(pD(b.fecha)||0)),c=a=>ss.filter(x=>x.asistencia===a).length,base=c("Presente")+c("Ausente");
+  h+=`<section class="sec"><h3>Mi asistencia</h3>${ss.length?`<div class="kpis"><div class="kpi"><b>${base?Math.round(c("Presente")/base*100)+"%":"–"}</b><span>Asistencia</span></div><div class="kpi"><b>${c("Presente")}</b><span>Presente</span></div><div class="kpi"><b>${c("Ausente")}</b><span>Ausente</span></div><div class="kpi"><b>${c("Justificado")+c("Lesionado")}</b><span>Justificado</span></div></div>
+   <div class="dots" aria-label="Últimos entrenamientos">${ss.slice(-60).map(x=>`<i class="c-${["Presente","Ausente","Justificado","Lesionado"].includes(x.asistencia)?x.asistencia:"Otro"}" title="${esc(x.fecha+" · "+x.asistencia)}"></i>`).join("")}</div>
+   <div class="legend">${["Presente","Ausente","Justificado","Lesionado"].map(a=>`<span><i class="c-${a}"></i>${a}</span>`).join("")}</div>`:'<p class="empty">Aún no hay entrenamientos registrados.</p>'}</section>`;
+  // Tests
+  const T={};(d.tests||[]).forEach(t=>(T[t.test]=T[t.test]||[]).push(t));
+  h+=`<section class="sec"><h3>Mis tests físicos</h3>${Object.keys(T).length?Object.keys(T).map(k=>{const a=T[k].slice().sort((x,y)=>(pD(x.fecha)||0)-(pD(y.fecha)||0)),u=a[0].unidad||"",max=Math.max(...a.map(x=>n(x.resultado)||0))||1;
+     const dif=a.length>1?(n(a[a.length-1].resultado)||0)-(n(a[0].resultado)||0):null,mej=dif==null?null:(/menor/i.test(a[0].mejor)?dif<0:dif>0);
+     return `<div><div class="sec-h"><b>${esc(k)}</b><span class="hint">${esc(u)}</span></div><div class="tb">${a.slice(-6).map(x=>`<div><b>${f1(n(x.resultado))}</b><i style="height:${Math.max(6,(n(x.resultado)||0)/max*80)}px"></i>${esc(x.toma||dS(pD(x.fecha)))}</div>`).join("")}</div>
+       <p class="hint" style="margin-top:6px">${dif==null?"Primera toma registrada.":dif===0?"Igual que en tu primera toma.":`<b style="color:var(--${mej?"ok":"danger"})">${mej?"Mejoraste":"Bajaste"} ${f1(Math.abs(dif))} ${esc(u)}</b> desde tu primera toma.`}</p></div>`}).join(""):'<p class="empty">Aún no hay tests registrados.</p>'}</section>`;
+  // Evaluación
+  const ev=(d.evaluaciones||[]).slice().sort((a,b)=>(pD(a.fecha)||0)-(pD(b.fecha)||0)),e=ev[ev.length-1];
+  const AR=[["tecnico","Técnico"],["tactico","Táctico"],["fisico","Físico"],["psicosocial","Actitud"]];
+  h+=`<section class="sec"><div class="sec-h"><h3>Mi evaluación</h3>${e?`<span class="hint">${esc(e.periodo||"")} · ${esc(dL(pD(e.fecha)))}</span>`:""}</div>${e?`${AR.map(([k,t])=>{const v=n(e[k]);return `<div class="area"><span>${t}</span><span class="sc">${[1,2,3,4,5].map(i=>`<i class="${v!=null&&i<=v?"on":""}"></i>`).join("")}</span><b>${v!=null?f1(v):"–"}</b></div>`}).join("")}
+   <p class="hint">De 1 a 5: 3 es lo esperado para tu edad.</p>
+   ${[["Fortalezas",e.fortalezas],["Para mejorar",e.mejorar],["Objetivo a corto plazo",e.objCorto],["Objetivo a mediano plazo",e.objMediano],["Objetivo a largo plazo",e.objLargo]].filter(x=>x[1]).map(x=>`<div class="txt"><span>${x[0]}</span>${esc(x[1])}</div>`).join("")}
+   ${ev.length>1?`<div class="txt"><span>Evaluaciones anteriores</span>${ev.slice(0,-1).reverse().map(p=>`${esc(p.periodo||p.fecha)}: ${AR.map(([k,t])=>t+" "+(n(p[k])!=null?f1(n(p[k])):"–")).join(" · ")}`).join("<br>")}</div>`:""}`:'<p class="empty">Aún no tienes evaluaciones.</p>'}</section>`;
+  h+=`<div class="row" style="justify-content:space-between"><span class="hint">Actualizado ${esc(dL(new Date(S.stamp)))} ${new Date(S.stamp).toLocaleTimeString("es-CO",{hour:"numeric",minute:"2-digit"})}</span><button class="btn sm" data-a="upd" ${S.busy?"disabled":""}>${S.busy?"Actualizando…":"Actualizar"}</button></div>
+   <button class="btn sm" data-a="salir" style="align-self:center">Salir de este teléfono</button>`;
+  return h;
+}
+function render(){
+  const d=S.d,club=d&&d.club,esc0=S.fotos&&S.fotos.escudo;
+  document.getElementById("club").textContent=club?[club.nombre,club.categoria].filter(Boolean).join(" · "):"";
+  document.getElementById("crest").innerHTML=esc0?`<img src="${esc0}" alt="">`:"";
+  document.getElementById("app").innerHTML=d&&(S.ses||memSes)?vDatos():vLogin();
+  const f=document.getElementById("login");if(f)f.onsubmit=entrar;
+}
+document.addEventListener("click",ev=>{const t=ev.target.closest("[data-a]");if(!t)return;
+  if(t.dataset.a==="upd")actualizar();
+  else if(t.dataset.a==="todos"){S.todos=!S.todos;render()}
+  else if(t.dataset.a==="salir"){if(confirm("¿Salir? Se borrará la información guardada en este teléfono."))salir()}});
+addEventListener("online",()=>{if(S.offline)actualizar()});
+render();
+if(S.ses)actualizar();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body></html>

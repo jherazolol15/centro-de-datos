@@ -513,7 +513,7 @@ const TABS=[["inicio","Inicio",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6
   ["jugadores","Jugadores",'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'],
   ["minutos","Control",'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>'],
   ["registrar","Registrar",'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 11l2 2 4-4M9 17h6"/>']];
-const SUBJ=[["jugadores","Lista"],["convocatoria","Convocatoria"],["profundidad","Profundidad"],["comparar","Comparar"],["bajas","Lesiones y sanciones"]];
+const SUBJ=[["jugadores","Lista"],["convocatoria","Convocatoria"],["profundidad","Profundidad"],["comparar","Comparar"],["bajas","Lesiones y sanciones"],["accesos","Acceso jugadores"]];
 const SUBR=[["registrar","Asistencia"],["reg-test","Test"],["reg-eval","Evaluación"],["reg-lesion","Lesión"],["reg-sancion","Sanción"]];
 function route(){const h=(location.hash||"").replace(/^#/,"");const m=h.match(/^(jugador|partido)-([A-Za-z0-9]+)$/);if(m)return {v:m[1],id:m[2]};if(SUBJ.some(t=>t[0]===h)||SUBR.some(t=>t[0]===h)||SUBS.some(t=>t[0]===h))return {v:h};return {v:TABS.some(t=>t[0]===h)?h:"inicio"}}
 function subnav(list,cur){return `<nav class="subnav" aria-label="Secciones">${list.map(t=>`<a href="#${t[0]}" ${t[0]===cur?'aria-current="page"':""}>${t[1]}</a>`).join("")}</nav>`}
@@ -552,6 +552,7 @@ function render(){
   else if(r.v==="evaluacion")html+=vEvaluacion();
   else if(r.v==="reg-test")html+=vRegTest();
   else if(r.v==="reg-eval")html+=vRegEval();
+  else if(r.v==="accesos")html+=window.vAccesos();
   const keepScroll=render._last===location.hash;render._last=location.hash;
   const ae=document.activeElement,aid=ae&&ae.id,sel=ae&&ae.selectionStart;
   app.innerHTML=html;
@@ -685,7 +686,7 @@ function vJugador(id){
    <div class="facts"><div class="fact"><span>Edad</span><b>${esc(j.edad||"–")}</b></div><div class="fact"><span>Nacido en</span><b>${esc(j.trim||"–")}</b></div><div class="fact"><span>Pierna</span><b>${esc(j.pierna||"–")}</b></div>
    <div class="fact"><span>Estatura</span><b>${j.est?esc(j.est)+" cm":"–"}</b></div><div class="fact"><span>Peso</span><b>${j.peso?esc(j.peso)+" kg":"–"}</b></div><div class="fact"><span>IMC</span><b>${esc(j.imc||"–")}</b></div></div>
    ${j.obs?`<p class="hint">${esc(j.obs)}</p>`:""}</section>`;
-  h+=`${compChips()}<section class="sec"><div class="sec-h"><h3>Temporada</h3><span class="hint">${esc(S.comp==="Todas"?"Todas las competiciones":S.comp)}</span></div>
+  h+=`<button class="btn pri wide" data-act="inf-open" data-id="${esc(id)}">Informe PDF del jugador</button>${compChips()}<section class="sec"><div class="sec-h"><h3>Temporada</h3><span class="hint">${esc(S.comp==="Todas"?"Todas las competiciones":S.comp)}</span></div>
    <div class="kpis"><div class="kpi"><b>${s.pj}</b><span>PJ de ${ms.length}</span></div><div class="kpi"><b>${s.tit}</b><span>Titular</span></div><div class="kpi"><b>${s.min}'</b><span>Minutos</span></div><div class="kpi"><b>${fmt1(s.nota)}</b><span>Nota media</span></div>
    <div class="kpi"><b>${s.g}</b><span>Goles</span></div><div class="kpi"><b>${s.a}</b><span>Asist.</span></div><div class="kpi"><b>${s.mvp}</b><span>MVP</span></div><div class="kpi"><b>${s.am}/${s.ro}</b><span>TA / TR</span></div></div></section>`;
   h+=perfilCard(j);
@@ -1473,4 +1474,5 @@ window.addEventListener("hashchange",render);
 </script>
 
 
+<script src="extra.js"></script>
 </body></html>
