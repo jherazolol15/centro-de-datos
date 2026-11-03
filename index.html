@@ -458,6 +458,8 @@ function pStats(jid,ms){
   rows.forEach(s=>{if(s.min>0){o.pj++;if(s.cond==="Titular"){o.tit++;o.minTit+=s.min}else{o.sup++;o.minSup+=s.min}}o.min+=s.min;o.g+=s.g;o.a+=s.a;if(s.mvp)o.mvp++;o.am+=s.am;o.ro+=s.ro;if(s.nota!=null&&s.min>0)o.notas.push(s.nota);o.gr+=s.gr||0;o.pa+=s.pa||0});
   o.nota=o.notas.length?o.notas.reduce((a,b)=>a+b,0)/o.notas.length:null;return o;
 }
+function gkStats(jid,ms){let inv=0,gr=0,pa=0,pj=0;ms.forEach(m=>{const s=S.stats.find(x=>x.pt===m.id&&x.jid===jid);if(!s||!(s.min>0))return;pj++;const g=s.gr!=null?s.gr:(s.min>=(m.dur||S.config.duracion||80)?m.gc:null);if(g!=null)gr+=g;if(g===0)inv++;pa+=s.pa||0});return {inv,gr,pa,pj}}
+function isGK(j){return posGroup(j&&j.pos1)==="por"}
 function availMin(ms){const ids=new Set(S.stats.map(s=>s.pt));return ms.filter(m=>ids.has(m.id)).reduce((a,m)=>a+(m.dur||S.config.duracion||80),0)}
 function activeInjury(jid){return S.lesiones.find(l=>l.jid===jid&&!l.altaReal&&!/alta|cerrad|recuper/i.test(l.estado))}
 function activeSanction(jid){return S.sanciones.find(s=>s.jid===jid&&/activa|pendiente/i.test(s.estado))}
@@ -688,7 +690,7 @@ function vJugador(id){
    ${j.obs?`<p class="hint">${esc(j.obs)}</p>`:""}</section>`;
   h+=`<button class="btn pri wide" data-act="inf-open" data-id="${esc(id)}">Informe PDF del jugador</button>${compChips()}<section class="sec"><div class="sec-h"><h3>Temporada</h3><span class="hint">${esc(S.comp==="Todas"?"Todas las competiciones":S.comp)}</span></div>
    <div class="kpis"><div class="kpi"><b>${s.pj}</b><span>PJ de ${ms.length}</span></div><div class="kpi"><b>${s.tit}</b><span>Titular</span></div><div class="kpi"><b>${s.min}'</b><span>Minutos</span></div><div class="kpi"><b>${fmt1(s.nota)}</b><span>Nota media</span></div>
-   <div class="kpi"><b>${s.g}</b><span>Goles</span></div><div class="kpi"><b>${s.a}</b><span>Asist.</span></div><div class="kpi"><b>${s.mvp}</b><span>MVP</span></div><div class="kpi"><b>${s.am}/${s.ro}</b><span>TA / TR</span></div></div></section>`;
+   ${isGK(j)?(k=>`<div class="kpi"><b>${k.inv}</b><span>Vallas invictas</span></div><div class="kpi"><b>${k.gr}</b><span>Goles recibidos</span></div><div class="kpi"><b>${k.pa}</b><span>Penales atajados</span></div>`)(gkStats(id,ms)):`<div class="kpi"><b>${s.g}</b><span>Goles</span></div><div class="kpi"><b>${s.a}</b><span>Asist.</span></div>`}<div class="kpi"><b>${s.mvp}</b><span>MVP</span></div><div class="kpi"><b>${s.am}/${s.ro}</b><span>TA / TR</span></div></div></section>`;
   h+=perfilCard(j);
   const items=ms.map(m=>{const r=S.stats.find(x=>x.pt===m.id&&x.jid===id);return {x:dShort(m.fecha),min:r?r.min:0,tit:r&&r.cond==="Titular",nota:r&&r.min>0?r.nota:null,conv:!!r}});
   h+=`<div class="cols"><section class="sec"><h3>Partido a partido</h3><div class="legend"><span><i style="background:var(--accent)"></i>Minutos de titular</span><span><i style="background:var(--sky)"></i>Desde el banco</span><span><i style="background:var(--warn);border-radius:50%"></i>Nota (eje derecho)</span></div>${matchChart(items,S.config.duracion||80)}</section>

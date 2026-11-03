@@ -96,9 +96,11 @@ function bloques(j, R) {
     <div class="rp-facts"><div class="rp-fact"><span>Edad</span><b>${v(j.edad)}</b></div><div class="rp-fact"><span>Pierna hábil</span><b>${v(j.pierna)}</b></div>
     <div class="rp-fact"><span>Estatura</span><b>${j.est ? esc(j.est) + " cm" : "–"}</b></div><div class="rp-fact"><span>Peso</span><b>${j.peso ? esc(j.peso) + " kg" : "–"}</b></div></div></div></div>`);
   // Partidos
-  const ms = S.partidos.filter(m => enRango(m.fecha, R)), s = pStats(j.id, ms);
-  out.push(`<h4>Partidos</h4><div class="rp-kpis"><div class="rp-kpi"><b>${s.conv}</b><span>Convocado de ${ms.length}</span></div><div class="rp-kpi"><b>${s.pj}</b><span>Jugados</span></div><div class="rp-kpi"><b>${s.tit}</b><span>Titular</span></div><div class="rp-kpi"><b>${s.min}'</b><span>Minutos</span></div><div class="rp-kpi"><b>${fmt1(s.nota)}</b><span>Nota media</span></div>
-    <div class="rp-kpi"><b>${s.g}</b><span>Goles</span></div><div class="rp-kpi"><b>${s.a}</b><span>Asistencias</span></div><div class="rp-kpi"><b>${s.mvp}</b><span>MVP</span></div><div class="rp-kpi"><b>${s.am}</b><span>Amarillas</span></div><div class="rp-kpi"><b>${s.ro}</b><span>Rojas</span></div></div>`);
+  const ms = S.partidos.filter(m => enRango(m.fecha, R)), s = pStats(j.id, ms), gk = isGK(j), k = gk ? gkStats(j.id, ms) : null;
+  const kp = (b, t) => `<div class="rp-kpi"><b>${b}</b><span>${t}</span></div>`;
+  out.push(`<h4>Partidos</h4><div class="rp-kpis">${kp(s.conv, "Convocado de " + ms.length)}${kp(s.pj, "Jugados")}${kp(s.tit, "Titular")}${kp(s.min + "'", "Minutos")}${kp(fmt1(s.nota), "Nota media")}
+    ${gk ? kp(k.inv, "Vallas invictas") + kp(k.gr, "Goles recibidos") + kp(k.pa, "Penales atajados") + kp(s.mvp, "MVP") + kp(s.am + " / " + s.ro, "Amarillas / rojas")
+         : kp(s.g, "Goles") + kp(s.a, "Asistencias") + kp(s.mvp, "MVP") + kp(s.am, "Amarillas") + kp(s.ro, "Rojas")}</div>`);
   if (ms.length) {
     const filas = ms.slice().reverse().map(m => {
       const r = S.stats.find(x => x.pt === m.id && x.jid === j.id), dur = m.dur || S.config.duracion || 80;
@@ -106,10 +108,11 @@ function bloques(j, R) {
       const min = r ? r.min : 0;
       return `<tr><td>${esc(dShort(m.fecha))}</td><td>${esc(m.rival)}<br><span style="color:#53706a;font-size:10.5px">${esc(m.comp)}</span></td><td class="c">${m.gf}-${m.gc}<span class="rp-res" style="background:${m.res === "G" ? C.ok : m.res === "E" ? C.mut : C.bad}">${m.res}</span></td>
         <td>${cond}</td><td>${(w => `<span class="rp-bar" style="background:linear-gradient(90deg,${r && r.cond === "Titular" ? C.acc : C.sky} ${w}%,#e7f1ee ${w}%)"></span>`)(Math.round(Math.min(100, min / dur * 100)))}${min}'</td>
-        <td class="c">${r && r.g ? r.g : ""}</td><td class="c">${r && r.a ? r.a : ""}</td><td class="c">${r && r.min > 0 && r.nota != null ? fmt1(r.nota) : ""}</td><td class="c">${r ? (r.am ? r.am + " TA " : "") + (r.ro ? r.ro + " TR" : "") : ""}</td></tr>`;
+        ${gk ? (g => `<td class="c">${g == null ? "" : g === 0 ? "0 ✓" : g}</td><td class="c">${r && r.pa ? r.pa : ""}</td>`)(r && r.min > 0 ? (r.gr != null ? r.gr : (r.min >= dur ? m.gc : null)) : null) : `<td class="c">${r && r.g ? r.g : ""}</td><td class="c">${r && r.a ? r.a : ""}</td>`}<td class="c">${r && r.min > 0 && r.nota != null ? fmt1(r.nota) : ""}</td><td class="c">${r ? (r.am ? r.am + " TA " : "") + (r.ro ? r.ro + " TR" : "") : ""}</td></tr>`;
     });
-    const head = `<table class="rp-t"><tr><th>Fecha</th><th>Rival</th><th class="c">Resultado</th><th>Condición</th><th>Minutos</th><th class="c">G</th><th class="c">A</th><th class="c">Nota</th><th class="c">Tarjetas</th></tr>`;
-    for (let i = 0; i < filas.length; i += 16) out.push(`<h4>Partido a partido${i ? " (continuación)" : ""}</h4>${head}${filas.slice(i, i + 16).join("")}</table>`);
+    const head = `<table class="rp-t"><tr><th>Fecha</th><th>Rival</th><th class="c">Resultado</th><th>Condición</th><th>Minutos</th>${gk ? '<th class="c">GR</th><th class="c">PA</th>' : '<th class="c">G</th><th class="c">A</th>'}<th class="c">Nota</th><th class="c">Tarjetas</th></tr>`;
+    const nota = gk ? '<p style="font-size:10.5px;color:#53706a;margin:4px 0 0">GR: goles recibidos con él en cancha (✓ valla invicta). PA: penales atajados.</p>' : "";
+    for (let i = 0; i < filas.length; i += 16) out.push(`<h4>Partido a partido${i ? " (continuación)" : ""}</h4>${head}${filas.slice(i, i + 16).join("")}</table>${i + 16 >= filas.length ? nota : ""}`);
   }
   // Asistencia
   const ses = sessionsOf(j.id).filter(x => enRango(x.fecha, R)), cnt = a => ses.filter(x => x.asis === a).length;

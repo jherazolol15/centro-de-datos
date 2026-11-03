@@ -104,7 +104,7 @@ async function pedir(ses,sinFotos){
   if(!r.ok)throw {code:r.error||"red"};return r;
 }
 function guardar(r,recordar){
-  S.d={jugador:r.jugador,club:r.club,proximo:r.proximo,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
+  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
   if(r.fotos){S.fotos=r.fotos}
   if(recordar){LS.set("datos",S.d);LS.set("stamp",S.stamp);if(r.fotos)LS.set("fotos",r.fotos)}
 }
@@ -149,9 +149,12 @@ function vDatos(){
     h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p></div>${dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div></section>`}
   // Partidos
   const ps=(d.partidos||[]).slice().sort((a,b)=>(pD(b.fecha)||0)-(pD(a.fecha)||0)),conv=ps.filter(x=>x.convocado),jug=conv.filter(x=>n(x.min)>0);
-  const sum=k=>conv.reduce((a,x)=>a+(n(x[k])||0),0);
-  h+=`<section class="sec"><h3>Mis partidos</h3>${ps.length?`<div class="kpis"><div class="kpi"><b>${conv.length}</b><span>Convocado</span></div><div class="kpi"><b>${jug.length}</b><span>Jugados</span></div><div class="kpi"><b>${conv.filter(x=>x.cond==="Titular"&&n(x.min)>0).length}</b><span>Titular</span></div><div class="kpi"><b>${sum("min")}'</b><span>Minutos</span></div><div class="kpi"><b>${sum("goles")}</b><span>Goles</span></div><div class="kpi"><b>${sum("asist")}</b><span>Asistencias</span></div></div>
-   <div class="list">${ps.slice(0,S.todos?999:6).map(x=>{const gf=n(x.gf),gc=n(x.gc),r=gf>gc?"G":gf<gc?"P":"E",m=n(x.min)||0,extra=[n(x.goles)?x.goles+(n(x.goles)===1?" gol":" goles"):"",n(x.asist)?x.asist+(n(x.asist)===1?" asistencia":" asistencias"):"",n(x.am)?"amarilla":"",n(x.ro)?"roja":""].filter(Boolean).join(" · ");
+  const sum=k=>conv.reduce((a,x)=>a+(n(x[k])||0),0),gk=/portero/i.test(j.pos1||""),dur=d.duracion||80;
+  /* Portero: goles recibidos con él en cancha; si no se anotaron y jugó completo, los del marcador */
+  const grOf=x=>{const m=n(x.min)||0;if(!x.convocado||!(m>0))return null;const g=n(x.gr);return g!=null?g:(m>=dur?n(x.gc):null)};
+  const inv=jug.filter(x=>grOf(x)===0).length,grT=jug.reduce((a,x)=>a+(grOf(x)||0),0);
+  h+=`<section class="sec"><h3>Mis partidos</h3>${ps.length?`<div class="kpis"><div class="kpi"><b>${conv.length}</b><span>Convocado</span></div><div class="kpi"><b>${jug.length}</b><span>Jugados</span></div><div class="kpi"><b>${conv.filter(x=>x.cond==="Titular"&&n(x.min)>0).length}</b><span>Titular</span></div><div class="kpi"><b>${sum("min")}'</b><span>Minutos</span></div>${gk?`<div class="kpi"><b>${inv}</b><span>Vallas invictas</span></div><div class="kpi"><b>${grT}</b><span>Goles recibidos</span></div><div class="kpi"><b>${sum("pa")}</b><span>Penales atajados</span></div>`:`<div class="kpi"><b>${sum("goles")}</b><span>Goles</span></div><div class="kpi"><b>${sum("asist")}</b><span>Asistencias</span></div>`}</div>
+   <div class="list">${ps.slice(0,S.todos?999:6).map(x=>{const gf=n(x.gf),gc=n(x.gc),r=gf>gc?"G":gf<gc?"P":"E",m=n(x.min)||0,g=gk?grOf(x):null,extra=[gk&&g!=null?(g===0?"valla invicta":g+(g===1?" gol recibido":" goles recibidos")):"",gk&&n(x.pa)?x.pa+(n(x.pa)===1?" penal atajado":" penales atajados"):"",n(x.goles)?x.goles+(n(x.goles)===1?" gol":" goles"):"",n(x.asist)&&!gk||gk&&n(x.asist)?x.asist+(n(x.asist)===1?" asistencia":" asistencias"):"",n(x.am)?"amarilla":"",n(x.ro)?"roja":""].filter(Boolean).join(" · ");
      return `<div class="li"><span class="res ${r}">${esc(x.gf)}-${esc(x.gc)}</span><div class="meta"><span class="nm">vs ${esc(x.rival)}</span><span class="sub">${esc(dS(pD(x.fecha)))}${x.comp?" · "+esc(x.comp):""}</span><span class="sub">${!x.convocado?"No convocado":m>0?(x.cond==="Titular"?"Titular":"Ingresó")+" · "+m+"'":"Convocado, no jugó"}${extra?" · "+esc(extra):""}</span></div></div>`}).join("")}</div>
    ${ps.length>6?`<button class="more" data-a="todos">${S.todos?"Ver menos":"Ver todos ("+ps.length+")"}</button>`:""}`:'<p class="empty">Aún no hay partidos registrados.</p>'}</section>`;
   // Asistencia
