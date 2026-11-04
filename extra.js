@@ -125,9 +125,9 @@ function bloques(j, R) {
   const tarjetas = Object.keys(porTest).map(n => {
     const m = testMeta(n), a = porTest[n].slice().sort((x, y) => (x.f || 0) - (y.f || 0)), max = Math.max(...a.map(x => x.res), 0) || 1;
     const dif = a.length > 1 ? a[a.length - 1].res - a[0].res : null, mejora = dif == null ? null : (m.mejor === "Menor" ? dif < 0 : dif > 0);
-    return `<div class="rp-card"><div class="h"><span>${esc(n)}</span><span style="color:#53706a;font-weight:500">${esc(m.u)} · mejor si es ${esc(String(m.mejor || "Mayor").toLowerCase())}</span></div>
-      <div class="rp-tb">${a.slice(-6).map(x => `<div><b>${fmtR(x.res)}</b><i style="height:${Math.max(4, x.res / max * 48)}px"></i>${esc(x.toma || dShort(x.f))}</div>`).join("")}</div>
-      ${dif != null && dif !== 0 ? `<div style="font-size:11.5px;color:${mejora ? C.ok : C.bad};font-weight:700">${mejora ? "Mejoró" : "Bajó"} ${fmtR(Math.abs(dif))} ${esc(m.u)} desde la primera toma</div>` : dif === 0 ? '<div style="font-size:11.5px;color:#53706a">Igual que en la primera toma</div>' : '<div style="font-size:11.5px;color:#53706a">Una sola toma</div>'}</div>`;
+    return `<div class="rp-card"><div class="h"><span>${esc(n)}</span><span style="color:#53706a;font-weight:500">${esc(m.u === "s" && a.some(x => x.res >= 60) ? "min:s" : m.u)} · mejor si es ${esc(String(m.mejor || "Mayor").toLowerCase())}</span></div>
+      <div class="rp-tb">${a.slice(-6).map(x => `<div><b>${fmtV(x.res, m.u)}</b><i style="height:${Math.max(4, x.res / max * 48)}px"></i>${esc(x.toma || dShort(x.f))}</div>`).join("")}</div>
+      ${dif != null && dif !== 0 ? `<div style="font-size:11.5px;color:${mejora ? C.ok : C.bad};font-weight:700">${mejora ? "Mejoró" : "Bajó"} ${esc(fmtT(Math.abs(dif), m.u))} desde la primera toma</div>` : dif === 0 ? '<div style="font-size:11.5px;color:#53706a">Igual que en la primera toma</div>' : '<div style="font-size:11.5px;color:#53706a">Una sola toma</div>'}</div>`;
   });
   if (!tarjetas.length) out.push('<h4>Tests físicos</h4><p class="rp-empty">Sin tests registrados en el periodo.</p>');
   for (let i = 0; i < tarjetas.length; i += 4) out.push(`<h4>Tests físicos${i ? " (continuación)" : ""}</h4><div class="rp-2">${tarjetas.slice(i, i + 4).join("")}</div>`);
