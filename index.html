@@ -1066,7 +1066,7 @@ function monday(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.
 function mmss(v){const t=Math.round(v*10)/10,mi=Math.floor(t/60),se=t-mi*60;return mi+":"+(se<10?"0":"")+(Math.round(se*10)/10).toLocaleString("es-CO",{maximumFractionDigits:1})}
 function fmtV(v,u){return u==="s"&&v!=null&&isFinite(v)&&v>=60?mmss(v):fmtR(v)}
 function fmtT(v,u){return u==="s"&&v!=null&&isFinite(v)&&v>=60?mmss(v)+" min":fmtR(v)+" "+u}
-function parseRes(raw){const m=/^(\d{1,3})\s*[:'´’]\s*([0-5]?\d(?:[.,]\d+)?)\s*(?:''|"|’’|s)?$/i.exec(String(raw).trim());if(m){const se=Number(m[2].replace(",","."));return se<60?Number(m[1])*60+se:null}return numDec(raw)}
+function parseRes(raw){const m=/^(\d{1,3})\s*(?:[:'´’-]|\s)\s*([0-5]?\d(?:[.,]\d+)?)\s*(?:''|"|’’|s)?$/i.exec(String(raw).trim());if(m){const se=Number(m[2].replace(",","."));return se<60?Number(m[1])*60+se:null}return numDec(raw)}
 function fmtR(v){return v==null||!isFinite(v)?"–":Number(v).toLocaleString("es-CO",{maximumFractionDigits:2})}
 function btnLink(href,txt,pri){return `<a class="btn sm ${pri?"pri":""}" href="${href}" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start">${txt}</a>`}
 function pendingBox(t,msg,link){return `<div class="pending"><b>${t}</b><span class="hint">${msg}</span>${link||""}</div>`}
@@ -1222,7 +1222,7 @@ function vRegTest(){
    <label class="f">Toma<select id="rt-toma">${S.tomas.map(t=>`<option ${t===f.toma?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
    <label class="f">Fecha<input type="date" id="rt-fecha" value="${esc(f.fecha)}"></label>
    <label class="f" style="grid-column:1/-1">Evaluador<select id="rt-ev">${S.evaluadores.map(t=>`<option ${t===f.ev?"selected":""}>${esc(t)}</option>`).join("")}</select></label></div>
-   ${m?`<p class="hint">Resultado en <b>${esc(m.u)}</b>; mejor si es ${esc(String(m.mejor).toLowerCase())}. ${m.u==="s"?"Puedes escribir minutos y segundos (4:35) o solo segundos (275). ":""}Usa coma o punto para decimales. Deja vacío a quien no hizo el test. Lo que anotes queda guardado en el teléfono hasta que lo envíes.</p>`:""}</section>`;
+   ${m?`<p class="hint">Resultado en <b>${esc(m.u)}</b>; mejor si es ${esc(String(m.mejor).toLowerCase())}. ${m.u==="s"?"Para minutos y segundos separa con espacio o guion: 4 35 o 4-35 (también 4:35). O escribe solo segundos (275). ":""}Usa coma o punto para decimales. Deja vacío a quien no hizo el test. Lo que anotes queda guardado en el teléfono hasta que lo envíes.</p>`:""}</section>`;
   if(!f.test)return h+'<section class="sec"><p class="empty">Elige el test para ver la lista de jugadores.</p></section>';
   const n=pl.filter(j=>ex[j.id]==null&&String(f.vals[j.id]||"").trim()!=="").length;
   h+=`<section class="sec"><div class="sec-h"><h3>Resultados</h3><span class="hint" id="rt-count">${n} anotados</span></div><div class="list">${pl.map(j=>{const done=ex[j.id]!=null;return `<div class="li" style="min-height:52px">${avatar(j,"sm")}<div class="meta"><span class="nm">${j.dorsal?`<span class="ab">${esc(j.dorsal)}</span> · `:""}${esc(shortName(j.nombre))}</span>${done?`<span class="sub">Ya registrado: ${esc(fmtT(ex[j.id],m.u))}</span>`:dispChip(j)?`<span>${dispChip(j)}</span>`:""}</div>${done?"":`<input class="resin" type="text" inputmode="decimal" id="tv-${j.id}" data-tv="${j.id}" value="${esc(f.vals[j.id]||"")}" placeholder="${esc(m.u)}" aria-label="Resultado de ${esc(j.nombre)}" autocomplete="off">`}</div>`}).join("")}</div></section>`;
