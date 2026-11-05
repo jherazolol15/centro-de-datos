@@ -416,7 +416,7 @@ function parseAll(r){
   const A=r.pA||[],B=r.pB||[],C=r.pC||[];
   S.jug=[];
   A.forEach((row,i)=>{if(!row||!row[0]||!row[1])return;const b=B[i]||[],c=C[i]||[];
-    S.jug.push({id:row[0],label:row[1],nombre:nameOf(row[1]),dorsal:row[2]||"",edad:b[0]||"",trim:b[1]||"",pos1:b[2]||"",pos2:b[3]||"",pierna:b[4]||"",est:b[5]||"",peso:b[6]||"",imc:b[7]||"",estado:b[8]||"Activo",disp:b[9]||"Disponible",obs:c[0]||"",grupo:String(c[1]||"").trim(),retirado:/retir/i.test(b[8]||""),row:i+2})});
+    S.jug.push({id:row[0],label:row[1],nombre:nameOf(row[1]),dorsal:row[2]||"",edad:b[0]||"",trim:b[1]||"",pos1:b[2]||"",pos2:b[3]||"",pierna:b[4]||"",est:b[5]||"",peso:b[6]||"",imc:b[7]||"",estado:b[8]||"Activo",disp:b[9]||"Disponible",obs:c[0]||"",grupo:String(c[1]||"").trim(),retirado:/retir|promov/i.test(b[8]||""),promovido:/promov/i.test(b[8]||""),row:i+2})});
   S.fixtures=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]&&(x[6]===""||x[6]==null)).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||""})).filter(p=>p.fecha&&p.fecha>=today0()).sort((a,b)=>a.fecha-b.fecha);
   S.partidos=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||"",micro:x[5]||"",gf:num(x[6]),gc:num(x[7]),res:x[8]||"",pts:num(x[9]),label:x[10]||"",obs:x[11]||"",dur:num(x[12])||80}))
     .filter(p=>p.gf!=null&&p.gc!=null).sort((a,b)=>(a.fecha||0)-(b.fecha||0)||a.id.localeCompare(b.id));
@@ -464,7 +464,7 @@ function isGK(j){return posGroup(j&&j.pos1)==="por"}
 function availMin(ms){const ids=new Set(S.stats.map(s=>s.pt));return ms.filter(m=>ids.has(m.id)).reduce((a,m)=>a+(m.dur||S.config.duracion||80),0)}
 function activeInjury(jid){return S.lesiones.find(l=>l.jid===jid&&!l.altaReal&&!/alta|cerrad|recuper/i.test(l.estado))}
 function activeSanction(jid){return S.sanciones.find(s=>s.jid===jid&&/activa|pendiente/i.test(s.estado))}
-function dispChip(j){const d=j.disp||"";if(/Lesion/i.test(d))return '<span class="chip les">Lesionado</span>';if(/Suspend/i.test(d))return '<span class="chip sus">Suspendido</span>';if(j.retirado)return '<span class="chip ina">Retirado</span>';if(/Inactiv/i.test(d)||/Inactiv/i.test(j.estado))return '<span class="chip ina">Inactivo</span>';return ""}
+function dispChip(j){const d=j.disp||"";if(/Lesion/i.test(d))return '<span class="chip les">Lesionado</span>';if(/Suspend/i.test(d))return '<span class="chip sus">Suspendido</span>';if(j.retirado)return '<span class="chip ina">'+(j.promovido?"Promovido":"Retirado")+'</span>';if(/Inactiv/i.test(d)||/Inactiv/i.test(j.estado))return '<span class="chip ina">Inactivo</span>';return ""}
 function sessionsOf(jid){return S.sesiones.filter(s=>s.jid===jid).sort((a,b)=>a.fecha-b.fecha)}
 function asisPct(rows){const c=rows.filter(s=>s.asis==="Presente"||s.asis==="Ausente");return c.length?c.filter(s=>s.asis==="Presente").length/c.length:null}
 function goalEvents(){return S.eventos.filter(e=>/^gol/i.test(e.tipo))}
@@ -580,7 +580,7 @@ function vInicio(){
   const lastInf=[...ms].reverse().map(m=>S.informes[m.id]).find(x=>x&&x[30]);
   h+=`<section class="sec"><h3>Foco de la semana</h3>${lastInf&&(lastInf[28]||lastInf[29])?`${lastInf[29]?`<div><span class="hint">Qué trabajar</span><p class="txt">${esc(lastInf[29])}</p></div>`:""}${lastInf[28]?`<div><span class="hint">Qué mantener</span><p class="txt">${esc(lastInf[28])}</p></div>`:""}<p class="hint">Del informe del último partido.</p>`:'<p class="empty">Aparece cuando completas “qué mantener” y “qué cambiar” en el cierre de un partido.</p>'}</section></div>`;
   // Disponibilidad
-  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));
+  const act=S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado));
   const les=act.filter(j=>/Lesion/i.test(j.disp)||activeInjury(j.id)),sus=act.filter(j=>/Suspend/i.test(j.disp)||activeSanction(j.id));
   const outIds=new Set([...les,...sus].map(j=>j.id));const disp=act.filter(j=>!outIds.has(j.id));
   h+=`<div class="cols"><section class="sec"><div class="sec-h"><h3>Disponibilidad hoy</h3><span class="hint">${act.length} activos</span></div>
@@ -721,7 +721,7 @@ function cmpRow(t,v,avg,max,u){
 /* ============ Minutos y equidad ============ */
 function vMinutos(){
   const ms=fMatches(),av=availMin(ms);
-  const pl=fJug().filter(j=>!/Inactiv|Retir/i.test(j.estado)).map(j=>({j,s:pStats(j.id,ms)})).sort((a,b)=>b.s.min-a.s.min);
+  const pl=fJug().filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).map(j=>({j,s:pStats(j.id,ms)})).sort((a,b)=>b.s.min-a.s.min);
   let h=`${subnav(SUBS,"minutos")}<h2>Minutos y equidad</h2>${groupChips()}${compChips()}`;
   if(!av)return h+`<section class="sec"><p class="empty">Aún no hay minutos registrados.</p></section>`;
   const tot=pl.reduce((a,b)=>a+b.s.min,0),played=pl.filter(x=>x.s.min>0).length,low=pl.filter(x=>x.s.min/av<0.25);
@@ -745,13 +745,13 @@ function vMinutos(){
 /* ============ Registrar asistencia ============ */
 function newReg(){
   const lastMicro=[...S.sesiones].reverse().find(s=>s.micro);
-  const roster=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));
+  const roster=S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado));
   const p={};roster.forEach(j=>{p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});
   return {fecha:todayISO(),micro:String(S.config.micro||(lastMicro&&lastMicro.micro)||""),tipo:S.tipos[0]||"Campo",min:"90",rpe:"5",grupo:S.grupo,p};
 }
-function ensureReg(){if(!S.reg){S.reg=LS.get("draft",null)||newReg()}const reg=S.reg;S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).forEach(j=>{if(!reg.p[j.id])reg.p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});return reg}
+function ensureReg(){if(!S.reg){S.reg=LS.get("draft",null)||newReg()}const reg=S.reg;S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).forEach(j=>{if(!reg.p[j.id])reg.p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});return reg}
 function saveDraft(){LS.set("draft",S.reg)}
-function regPlayers(){const reg=ensureReg();return S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)&&(reg.grupo==="Todos"||!reg.grupo||j.grupo===reg.grupo)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
+function regPlayers(){const reg=ensureReg();return S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)&&(reg.grupo==="Todos"||!reg.grupo||j.grupo===reg.grupo)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
 function existingFor(reg){const d=isoToDate(reg.fecha);return S.sesiones.filter(s=>dKey(s.fecha)===dKey(d)&&s.tipo===reg.tipo)}
 function vRegistrar(){
   const reg=ensureReg(),pl=regPlayers(),gs=grupos();
@@ -851,7 +851,7 @@ function vBajas(){
      :`<div class="ev"><b style="font-size:.85rem">${esc(dShort(e.f))}</b><span><span class="chip sus">Sanción</span> ${nm} · ${esc(e.o.motivo)} <span class="hint">· ${esc(e.o.estado)}</span></span></div>`}).join("")}</div>`:'<p class="empty">Sin registros.</p>'}</section></div>`;
   return h;
 }
-function playerOptions(sel){return `<option value="">Elige un jugador</option>`+S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(j=>`<option value="${j.id}" ${j.id===sel?"selected":""}>${esc(j.nombre)}${j.dorsal?" · "+esc(j.dorsal):""}</option>`).join("")}
+function playerOptions(sel){return `<option value="">Elige un jugador</option>`+S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(j=>`<option value="${j.id}" ${j.id===sel?"selected":""}>${esc(j.nombre)}${j.dorsal?" · "+esc(j.dorsal):""}</option>`).join("")}
 function vRegLesion(){
   if(!S.les)S.les={jid:"",fecha:todayISO(),zona:"",desc:"",ctx:S.contextos[0]||"",prev:"",obs:"",confirm:false};
   const f=S.les,j=jById(f.jid);
@@ -987,7 +987,7 @@ async function writeConv(edits){
 const PITCH_POS=[["Delantero centro",50,12],["Extremo izquierdo",17,21],["Extremo derecho",83,21],["Mediocampista ofensivo",50,31],["Mediocampista mixto",50,45],["Mediocampista defensivo",50,59],["Lateral izquierdo",15,67],["Lateral derecho",85,67],["Defensa central",50,75],["Portero",50,90]];
 function covClass(c,total){if(/descub|sin cob|no cub/i.test(c))return "bad";if(/justa/i.test(c))return "warn";if(/cubierta/i.test(c))return "ok";return total>=2?"ok":total===1?"warn":"bad"}
 function vProfundidad(){
-  const avail=j=>!/Lesion|Suspend|Inactiv/i.test(j.disp)&&!/Inactiv|Retir/i.test(j.estado);
+  const avail=j=>!/Lesion|Suspend|Inactiv/i.test(j.disp)&&!/Inactiv|Retir|Promov/i.test(j.estado);
   const sel=S.profSel||"";
   const info=p=>{const pr=S.jug.filter(j=>j.pos1===p),al=S.jug.filter(j=>j.pos2===p);const s=S.prof[p];return {pr,al,total:s?s.total:pr.filter(avail).length+al.filter(avail).length,disp:s?s.disp:pr.filter(avail).length,cob:s?s.cob:""}};
   let h=`${subnav(SUBJ,"profundidad")}<h2>Profundidad por posición</h2>
@@ -1079,7 +1079,7 @@ function parseRes(raw){const m=/^(\d{1,3})\s*(?:[:'´’-]|\s)\s*([0-5]?\d(?:[.,
 function fmtR(v){return v==null||!isFinite(v)?"–":Number(v).toLocaleString("es-CO",{maximumFractionDigits:2})}
 function btnLink(href,txt,pri){return `<a class="btn sm ${pri?"pri":""}" href="${href}" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start">${txt}</a>`}
 function pendingBox(t,msg,link){return `<div class="pending"><b>${t}</b><span class="hint">${msg}</span>${link||""}</div>`}
-function activePl(){return fJug().filter(j=>!/Inactiv|Retir/i.test(j.estado)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
+function activePl(){return fJug().filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
 function loadsOf(jid){const out=[];
   S.sesiones.forEach(s=>{if((!jid||s.jid===jid)&&s.asis==="Presente"&&s.min!=null&&s.rpe!=null)out.push({f:s.fecha,c:s.min*s.rpe,jid:s.jid})});
   S.stats.forEach(s=>{const m=S.partidos.find(p=>p.id===s.pt);if((!jid||s.jid===jid)&&m&&m.fecha&&s.min>0&&s.rpe!=null)out.push({f:m.fecha,c:s.min*s.rpe,jid:s.jid})});return out}
@@ -1093,7 +1093,7 @@ function semaforo(j){const p=S.panel[j.id]||{};const acwr=numDec(p.acwr),bien=nu
   else if(bien!=null&&bien<bb){lvl=2;reasons.push("Bienestar bajo")}
   return {lvl:acwr==null&&bien==null&&!lb?-1:lvl,reasons,acwr,bien,lb}}
 function lastEval(jid){const a=S.evals.filter(e=>e.jid===jid);return a[a.length-1]||null}
-function teamEvalAvg(){const L=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).map(j=>lastEval(j.id)).filter(Boolean);return AREAS.map(([k])=>{const v=L.map(e=>e[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})}
+function teamEvalAvg(){const L=S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).map(j=>lastEval(j.id)).filter(Boolean);return AREAS.map(([k])=>{const v=L.map(e=>e[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})}
 function testMeta(n){return S.testCat.find(t=>t.n===n)||{n,u:"",mejor:"Mayor"}}
 function tomaVals(jid,test){const o={};S.tests.filter(t=>t.jid===jid&&t.test===test).forEach(t=>{if(!o[t.toma]||(t.f||0)>=(o[t.toma].f||0))o[t.toma]=t});return o}
 function testsPresent(){return [...new Set(S.tests.map(t=>t.test))]}
@@ -1328,7 +1328,7 @@ async function loadDriveImages(force){
 let fotosT=null;
 window.__fotosNuevas=()=>{clearTimeout(fotosT);fotosT=setTimeout(()=>{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){window.__fotosNuevas();return}const c=document.getElementById("crest");if(c)c.innerHTML=ourCrest(38);render()},250)};
 function imgCard(){
-  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));const sin=act.filter(j=>!FOTOS[j.id]);
+  const act=S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado));const sin=act.filter(j=>!FOTOS[j.id]);
   const riv=[...new Set(S.partidos.map(p=>p.rival))];const rs=riv.filter(r=>!escudoId(r));
   const acc=window.__acceso&&window.__acceso();
   return `<section class="sec"><div class="sec-h"><h3>Fotos y escudos</h3><span class="hint">${act.length-sin.length}/${act.length} fotos · ${riv.length-rs.length}/${riv.length} escudos</span></div>
@@ -1430,7 +1430,7 @@ function clubHero(){
 function clubInfo(){
   const ico={dt:'<path d="M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21c0-4 3.6-6 8-6s8 2 8 6"/>',pin:'<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',cup:'<path d="M7 4h10v5a5 5 0 0 1-10 0zM5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4M9 21h6M12 14v7"/>',std:'<path d="M3 20V9l9-5 9 5v11M3 20h18M8 20v-6h8v6"/>',team:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M14 15c3 0 8 1 8 5"/>'};
   const row=(i,k,v)=>`<div class="ci-row"><span class="ci-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ico[i]}</svg></span><div class="meta"><span class="ci-k">${k}</span><span class="ci-v">${v}</span></div></div>`;
-  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).length,yrs=CLUB.dtDesde?yearsSince(CLUB.dtDesde):null,dtf=CLUB.dtFoto&&window.foto(CLUB.dtFoto);
+  const act=S.jug.filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).length,yrs=CLUB.dtDesde?yearsSince(CLUB.dtDesde):null,dtf=CLUB.dtFoto&&window.foto(CLUB.dtFoto);
   return `<section class="sec"><h3>Ficha del club</h3><div class="ci">
    <div class="ci-row"><span class="av" style="width:52px;height:52px;border-color:var(--accent)">${dtf?`<img src="${dtf}" alt="">`:esc(initials(CLUB.dt))}</span><div class="meta"><span class="ci-k">Entrenador</span><span class="ci-v">${esc(CLUB.dt)}</span>${CLUB.dtDesde?`<span class="hint">Entrenador desde ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][CLUB.dtDesde.getMonth()]} de ${CLUB.dtDesde.getFullYear()} · ${yrs} ${yrs===1?"año":"años"}</span>`:""}</div></div>
    ${CLUB.dtOrigen||CLUB.dtNac?row("cal","Nacimiento del entrenador",esc(CLUB.dtOrigen)+(CLUB.dtNac?` <span class="hint">· ${dLong(CLUB.dtNac)} · ${yearsSince(CLUB.dtNac)} años</span>`:"")):""}

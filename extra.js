@@ -318,15 +318,15 @@ document.addEventListener("change", ev => { const t = ev.target; if (!S.act || S
 window.gestionCard = function (j) {
   const conFoto = !!FOTOS[j.id];
   return `<section class="sec"><h3>Gestión del jugador</h3>
-   ${j.retirado ? '<div class="banner warn">Retirado del equipo. Su historial se conserva, pero no aparece en listas, convocatoria ni registros, y no tiene acceso a «Mi progreso».</div>' : ""}
+   ${j.promovido ? '<div class="banner ok">Promovido a otra categoría. Su historial se conserva y sigue viendo «Mi progreso», pero no aparece en listas, asistencia, convocatoria, registros ni en Equipo.</div>' : j.retirado ? '<div class="banner warn">Retirado del equipo. Su historial se conserva, pero no aparece en listas, convocatoria ni registros, y no tiene acceso a «Mi progreso».</div>' : ""}
    <div class="row">${conFoto ? `<button class="btn sm" data-act="g-foto" data-id="${j.id}">Quitar foto</button>` : ""}
-   ${j.retirado ? `<button class="btn sm" data-act="g-ret" data-v="Activo" data-id="${j.id}">Reincorporar al equipo</button>` : `<button class="btn sm" data-act="g-ret" data-v="Retirado" data-id="${j.id}">Marcar como retirado</button>`}</div>
+   ${j.retirado ? `<button class="btn sm" data-act="g-ret" data-v="Activo" data-id="${j.id}">Reincorporar al equipo</button>` : `<button class="btn sm" data-act="g-ret" data-v="Promovido" data-id="${j.id}">Promover a otra categoría</button><button class="btn sm" data-act="g-ret" data-v="Retirado" data-id="${j.id}">Marcar como retirado</button>`}</div>
    <p class="hint">${conFoto ? "Quitar foto la borra en las dos apps; el jugador vuelve a mostrar sus iniciales. Si la foto equivocada está en la carpeta FOTOS APP de Drive, cámbiala o bórrala allí para que no vuelva al importar. " : ""}Para una pausa temporal usa «Inactivo» en la columna Estado de Plantilla.</p></section>`;
 };
 window.retiradosCard = function () {
   const r = S.jug.filter(j => j.retirado);
   if (!r.length) return "";
-  return `<section class="sec"><details><summary style="cursor:pointer;font-weight:700">Retirados (${r.length})</summary><div class="list" style="margin-top:10px">${r.map(j => `<a class="li" href="#jugador-${j.id}" style="text-decoration:none">${avatar(j, "sm")}<div class="meta"><span class="nm">${esc(j.nombre)}</span><span class="sub">${esc(j.pos1 || "")}</span></div><span class="chip ina">Retirado</span></a>`).join("")}</div></details></section>`;
+  return `<section class="sec"><details><summary style="cursor:pointer;font-weight:700">Fuera de la plantilla: promovidos y retirados (${r.length})</summary><div class="list" style="margin-top:10px">${r.map(j => `<a class="li" href="#jugador-${j.id}" style="text-decoration:none">${avatar(j, "sm")}<div class="meta"><span class="nm">${esc(j.nombre)}</span><span class="sub">${esc(j.pos1 || "")}</span></div><span class="chip ${j.promovido ? "ok" : "ina"}">${j.promovido ? "Promovido" : "Retirado"}</span></a>`).join("")}</div></details></section>`;
 };
 document.addEventListener("click", async ev => {
   const t = ev.target.closest('[data-act="g-foto"],[data-act="g-ret"]'); if (!t || S.busy) return;
@@ -339,13 +339,19 @@ document.addEventListener("click", async ev => {
     catch (e) { toast("No se pudo quitar la foto: " + ((e && e.message) || "sin señal")); }
     S.busy = false; render(); return;
   }
-  const v = t.dataset.v, ret = v === "Retirado";
-  if (!confirm(ret ? `¿Marcar a ${j.nombre} como retirado del equipo? Se conserva su historial y se quita su acceso a «Mi progreso».` : `¿Reincorporar a ${j.nombre} al equipo?`)) return;
+  const v = t.dataset.v, ret = v === "Retirado", pro = v === "Promovido";
+  let destino = "";
+  if (pro) { destino = prompt(`¿A qué equipo o categoría pasa ${shortName(j.nombre)}? (por ejemplo: Sub-17A)`, ""); if (destino === null) return; destino = destino.trim().slice(0, 40); if (!destino) { toast("Escribe el equipo de destino."); return; } }
+  else if (!confirm(ret ? `¿Marcar a ${j.nombre} como retirado del equipo? Se conserva su historial y se quita su acceso a «Mi progreso».` : `¿Reincorporar a ${j.nombre} al equipo?`)) return;
   S.busy = true; render();
   try {
     await window.puenteDT({ op: "set", range: `Plantilla!P${j.row}`, values: [[v]] });
     if (ret) { try { await window.puenteDT({ op: "jugQuitar", id: j.id }); } catch (e) {} }
-    toast(ret ? "Jugador marcado como retirado." : "Jugador reincorporado.");
+    if (pro || v === "Activo") {
+      const data = { promo: pro ? { a: destino, ts: Date.now() } : null }, ruta = "comunidad/" + j.id;
+      try { const w = await window.puenteDT({ op: "escribir", ops: [{ id: "g1", tipo: "update", ruta, data }] }); if (pro && !(w.resultados || []).every(x => x.ok)) await window.puenteDT({ op: "escribir", ops: [{ id: "g2", tipo: "set", ruta, data }] }); } catch (e) {}
+    }
+    toast(pro ? `${shortName(j.nombre)} promovido a ${destino}. Se publica en el muro.` : ret ? "Jugador marcado como retirado." : "Jugador reincorporado.");
     S.busy = false; await loadAll();
   } catch (e) { toast("No se pudo guardar: " + gsErrorText(e)); }
   S.busy = false; render();
@@ -354,7 +360,7 @@ document.addEventListener("click", async ev => {
 /* ---------- Comunidad (v2.2): aprobar perfiles, anuncios, muro y visibilidad ---------- */
 const CM = { d: LS.get("com", null), busy: null, err: null, t: 0, ver: {} };
 const RXI = { aplauso: "👏", fuego: "🔥", fuerza: "💪", corazon: "❤️", balon: "⚽" };
-const ICOM = { victoria: "🏆", mvp: "⭐", gol: "⚽", asis: "🎯", valla: "🧤", debut: "🌟", test: "📈", cumple: "🎂", anuncio: "📣" };
+const ICOM = { victoria: "🏆", mvp: "⭐", gol: "⚽", hattrick: "⚽⚽⚽", asis: "🎯", valla: "🧤", debut: "🌟", test: "📈", cumple: "🎂", anuncio: "📣", promocion: "🚀", post: "💬" };
 async function comCargar(force) {
   if (CM.busy || (!force && Date.now() - CM.t < 30000)) return;
   CM.busy = "carga"; render();
@@ -380,13 +386,18 @@ window.vComunidad = function () {
     return `<div class="ccard"><div class="att-top">${avatar(j, "sm")}<div class="meta" style="flex:1;min-width:0"><span class="nm" style="font-weight:700">${esc(p.nombre)}</span>${p.prop.apodo ? `<span class="sub">Apodo: <b style="color:var(--ink)">${esc(p.prop.apodo)}</b>${p.apodo && p.apodo !== p.prop.apodo ? ` (antes: ${esc(p.apodo)})` : ""}</span>` : '<span class="sub">Sin apodo</span>'}</div></div>
       ${p.prop.desc ? `<p style="margin:0">“${esc(p.prop.desc)}”</p>` : '<p class="hint">Sin descripción</p>'}
       <div class="fgrid"><button class="btn sm" data-act="cm-rech" data-id="${p.id}" ${CM.busy ? "disabled" : ""}>Rechazar</button><button class="btn pri sm" data-act="cm-ok" data-id="${p.id}" ${CM.busy ? "disabled" : ""}>Aprobar</button></div></div>`; }).join("")}</div>` : '<p class="empty">No hay perfiles por aprobar.</p>'}</section>`;
+  const pp = (d.posts || []).filter(x => x.estado === "pendiente");
+  h += `<section class="sec"><div class="sec-h"><h3>Publicaciones por aprobar</h3><span class="hint">${pp.length}</span></div>${pp.length ? `<div class="list">${pp.map(x => { const j = jById(x.autor) || { id: x.autor, nombre: x.nombre }, f = x.foto && window.foto(x.foto);
+    return `<div class="ccard"><div class="att-top">${avatar(j, "sm")}<div class="meta" style="flex:1;min-width:0"><span class="nm" style="font-weight:700">${esc(x.nombre)}</span><span class="sub">${esc(dLong(new Date(x.ts)))}</span></div></div>
+      ${x.texto ? `<p style="margin:0;white-space:pre-line">${esc(x.texto)}</p>` : ""}${x.foto ? (f ? `<img src="${f}" alt="Foto de la publicación" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px">` : '<p class="hint">Cargando foto…</p>') : ""}
+      <div class="fgrid"><button class="btn sm" data-act="cm-prech" data-id="${esc(x.id)}" ${CM.busy ? "disabled" : ""}>Rechazar</button><button class="btn pri sm" data-act="cm-pok" data-id="${esc(x.id)}" ${CM.busy ? "disabled" : ""}>Aprobar y publicar</button></div></div>`; }).join("")}</div>` : '<p class="empty">No hay publicaciones por aprobar.</p>'}</section>`;
   h += `<section class="sec"><h3>Anuncio en el muro</h3><label class="f">Texto<textarea id="cm-anuncio" rows="2" maxlength="280" placeholder="Ej.: Mañana entreno a las 3 p. m. en la sede.">${esc(CM.borrador || "")}</textarea></label>
     <button class="btn pri" data-act="cm-pub" ${CM.busy ? "disabled" : ""}>Publicar anuncio</button>
     ${d.anuncios.length ? `<div class="list">${d.anuncios.sort((a, b) => b.ts - a.ts).map(a => `<div class="li"><div class="meta"><span class="nm">📣 ${esc(a.texto)}</span><span class="sub">${esc(dLong(new Date(a.ts)))}</span></div><button class="btn sm" data-act="cm-borrar" data-id="${esc(a.id)}" ${CM.busy ? "disabled" : ""}>Borrar</button></div>`).join("")}</div>` : ""}</section>`;
   h += `<section class="sec"><div class="sec-h"><h3>Muro</h3><button class="btn sm" data-act="cm-reload" ${CM.busy ? "disabled" : ""}>${CM.busy === "carga" ? "Cargando…" : "Actualizar"}</button></div>
     <p class="hint">Jugadores y familias ven solo los totales de reacciones. Tú ves quién reaccionó. Lo oculto no lo ve nadie más.</p>
     ${d.muro.length ? `<div class="list">${d.muro.map(p => { const c = {}; p.quien.forEach(q => c[q.tipo] = (c[q.tipo] || 0) + 1); const open = CM.ver[p.id];
-      return `<div class="ccard" style="${p.oculto ? "opacity:.55" : ""}"><div class="att-top"><span style="font-size:1.4rem">${ICOM[p.tipo] || "⭐"}</span><div class="meta" style="flex:1;min-width:0"><span class="nm" style="font-weight:700">${esc(p.texto)}</span><span class="sub">${esc(p.fecha)}${p.oculto ? " · oculta" : ""}</span></div><button class="btn sm" data-act="cm-oc" data-id="${esc(p.id)}" data-v="${p.oculto ? 0 : 1}" ${CM.busy ? "disabled" : ""}>${p.oculto ? "Mostrar" : "Ocultar"}</button></div>
+      return `<div class="ccard" style="${p.oculto ? "opacity:.55" : ""}"><div class="att-top"><span style="font-size:1.4rem">${ICOM[p.tipo] || "⭐"}</span><div class="meta" style="flex:1;min-width:0"><span class="nm" style="font-weight:700">${p.tipo === "post" ? esc(p.autor) + ": " : ""}${esc(p.texto)}</span><span class="sub">${esc(p.fecha)}${p.oculto ? " · oculta" : ""}</span></div>${p.tipo === "post" ? `<button class="btn sm" data-act="cm-pdel" data-id="${esc(p.id.replace(/^post_/, ""))}" ${CM.busy ? "disabled" : ""}>Borrar</button>` : ""}<button class="btn sm" data-act="cm-oc" data-id="${esc(p.id)}" data-v="${p.oculto ? 0 : 1}" ${CM.busy ? "disabled" : ""}>${p.oculto ? "Mostrar" : "Ocultar"}</button></div>
         ${p.quien.length ? `<button class="linkbtn" data-act="cm-ver" data-id="${esc(p.id)}">${Object.keys(c).map(k => RXI[k] + " " + c[k]).join("  ")} · ${open ? "ocultar nombres" : "ver quién"}</button>${open ? `<p class="hint" style="margin:0">${p.quien.map(q => esc(q.nombre) + " " + (RXI[q.tipo] || "")).join(" · ")}</p>` : ""}` : '<span class="hint">Sin reacciones</span>'}</div>`; }).join("")}</div>` : '<p class="empty">Aún no hay publicaciones.</p>'}</section>`;
   h += `<section class="sec"><h3>Perfiles y visibilidad</h3><p class="hint">Si una familia prefiere que su hijo no aparezca en Equipo ni en el Muro, apaga «Visible». Él sigue viendo su propio progreso.</p>
     <div class="list">${d.perfiles.map(p => { const j = jById(p.id) || { id: p.id, nombre: p.nombre };
@@ -407,6 +418,9 @@ document.addEventListener("click", ev => {
   else if (a === "cm-vis" && P) comEscribir([{ tipo: "set", ruta: "comunidad/" + id, data: Object.assign(full(P), { visible: t.checked }) }], t.checked ? "Visible para el equipo." : "Oculto para el equipo.");
   else if (a === "cm-oc") { const ids = {}; CM.d.muro.forEach(p => { if (p.oculto) ids[p.id] = true; }); if (t.dataset.v === "1") ids[id] = true; else delete ids[id]; comEscribir([{ tipo: "set", ruta: "comunidad/ocultos", data: { ids } }], t.dataset.v === "1" ? "Publicación oculta." : "Publicación visible."); }
   else if (a === "cm-pub") { const x = String(CM.borrador || "").trim(); if (!x) { toast("Escribe el anuncio."); return; } comEscribir([{ tipo: "set", ruta: "anuncios/a" + Date.now().toString(36), data: { texto: x.slice(0, 280), ts: Date.now() } }], "Anuncio publicado."); CM.borrador = ""; }
+  else if (a === "cm-pok") comEscribir([{ tipo: "update", ruta: "posts/" + id, data: { estado: "aprobado", tsAprob: Date.now(), motivo: "" } }], "Publicación aprobada.");
+  else if (a === "cm-prech") { const m = prompt("Motivo para el jugador (opcional):", ""); if (m === null) return; comEscribir([{ tipo: "update", ruta: "posts/" + id, data: { estado: "rechazado", motivo: m.trim().slice(0, 200) } }], "Publicación rechazada."); }
+  else if (a === "cm-pdel") { if (!confirm("¿Borrar esta publicación del muro? No se puede deshacer.")) return; const x = (CM.d.posts || []).find(q => q.id === id); comEscribir([{ tipo: "delete", ruta: "posts/" + id }], "Publicación borrada.").then(() => { if (x && x.foto) window.puenteDT({ op: "fotoBorrar", id: x.foto }).catch(() => {}); }); }
   else if (a === "cm-borrar") { if (!confirm("¿Borrar este anuncio del muro?")) return; comEscribir([{ tipo: "delete", ruta: "anuncios/" + id }], "Anuncio borrado."); }
 });
 })();
