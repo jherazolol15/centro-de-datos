@@ -75,6 +75,34 @@ label.f input{font-size:1.1rem;text-transform:none;letter-spacing:0;color:var(--
 .empty{color:var(--muted);font-size:.92rem;margin:0}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .more{background:none;border:0;color:var(--sky);font-weight:700;padding:4px 0;cursor:pointer;align-self:flex-start}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;font-size:.72rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.tabs button span{font-size:1.25rem;line-height:1}
+.tabs button[aria-current="page"]{color:var(--accent)}
+body.con-tabs main{padding-bottom:96px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pc{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;cursor:pointer;color:inherit;font:inherit}
+.pc .av{width:72px;height:72px;font-size:1.4rem;border-width:3px}
+.pc b{font-size:.98rem;line-height:1.15}
+.pc small{color:var(--muted);font-size:.78rem}
+.apodo{display:inline-block;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.post{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border)}
+.post .top2{display:flex;gap:10px;align-items:center}
+.post .ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;background:var(--surface);flex:none;overflow:hidden}
+.post .ic img{width:100%;height:100%;object-fit:cover}
+.post.anuncio{background:var(--sky-soft);border-color:var(--accent)}
+.rx{display:flex;gap:6px;flex-wrap:wrap}
+.rx button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 10px;min-height:36px;font-size:1rem;cursor:pointer;color:inherit}
+.rx button.on{border-color:var(--accent);background:var(--sky-soft);font-weight:700}
+.rx button b{font-size:.85rem;margin-left:4px}
+textarea.ta{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:90px;resize:vertical}
+select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:48px}
+.ovl{position:fixed;inset:0;z-index:60;background:rgba(4,20,30,.55);display:grid;place-items:end center}
+@media(min-width:640px){.ovl{place-items:center;padding:24px}}
+.ovl .box{background:var(--surface);color:var(--ink);width:100%;max-width:520px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+@media(min-width:640px){.ovl .box{border-radius:18px}}
+.chip.w{background:var(--warn-soft);color:var(--warn)}
 </style>
 </head><body>
 <header class="top"><div class="top-in"><span id="crest"></span><div class="t"><b>Mi progreso</b><span id="club"></span></div></div></header>
@@ -99,11 +127,12 @@ function ini(s){const p=String(s||"").split(/\s+/).filter(Boolean);return ((p[0]
 const S={url:LS.get("url",""),ses:LS.get("ses",null),d:LS.get("datos",null),fotos:LS.get("fotos",null),err:null,busy:false,offline:false,stamp:LS.get("stamp",0),todos:false};
 let memSes=null;
 const ERR={acceso_invalido:"El documento o el código no son correctos.",bloqueado:"Demasiados intentos fallidos. Espera 15 minutos e intenta de nuevo.",inactivo:"Este acceso no está activo. Habla con el entrenador.",red:"Sin señal o el servidor no respondió. Intenta de nuevo.",operacion_desconocida:"El servicio aún no está listo. Avísale al entrenador."};
-async function pedir(ses,sinFotos){
+async function llamar(ses,body){
   const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),45000);
-  let r;try{r=await fetch(S.url,{method:"POST",body:JSON.stringify({op:"jugDatos",doc:ses.doc,codigo:ses.codigo,sinFotos:!!sinFotos}),signal:ctl.signal}).then(x=>x.json())}catch(e){throw {code:"red"}}finally{clearTimeout(t)}
+  let r;try{r=await fetch(S.url,{method:"POST",body:JSON.stringify(Object.assign({doc:ses.doc,codigo:ses.codigo},body)),signal:ctl.signal}).then(x=>x.json())}catch(e){throw {code:"red"}}finally{clearTimeout(t)}
   if(!r.ok)throw {code:r.error||"red"};return r;
 }
+function pedir(ses,sinFotos){return llamar(ses,{op:"jugDatos",sinFotos:!!sinFotos})}
 function guardar(r,recordar){
   S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
   if(r.fotos){S.fotos=r.fotos}
@@ -114,18 +143,18 @@ async function entrar(ev){
   const doc=document.getElementById("doc").value.trim(),codigo=document.getElementById("cod").value.replace(/\D/g,""),rec=document.getElementById("rec").checked;
   if(!doc||codigo.length!==6){S.err="Escribe el número de documento y el código de 6 dígitos.";render();return}
   S.busy=true;S.err=null;render();
-  try{const ses={doc,codigo};const r=await pedir(ses,false);if(rec){S.ses=ses;LS.set("ses",ses)}else{memSes=ses;S.ses=null}guardar(r,rec);S.offline=false}
+  try{const ses={doc,codigo};const r=await pedir(ses,false);if(rec){S.ses=ses;LS.set("ses",ses)}else{memSes=ses;S.ses=null}guardar(r,rec);S.offline=false;setTimeout(cargarEquipo,0)}
   catch(e){S.err=ERR[e.code]||ERR.red}
   S.busy=false;render();
 }
 async function actualizar(){
   const ses=S.ses||memSes;if(!ses||S.busy)return;
   S.busy=true;render();
-  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null}
+  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null;setTimeout(cargarEquipo,0)}
   catch(e){if(e.code==="acceso_invalido"||e.code==="inactivo"){salir(true);S.err="El código cambió o el acceso ya no está activo. Pide el código nuevo al entrenador.";}else S.offline=true}
   S.busy=false;render();
 }
-function salir(sil){LS.del("ses");LS.del("datos");LS.del("fotos");LS.del("stamp");S.ses=null;memSes=null;S.d=null;S.fotos=null;if(!sil)render()}
+function salir(sil){LS.del("ses");LS.del("datos");LS.del("fotos");LS.del("stamp");LS.del("equipo");LS.del("fx");S.eq=null;S.fx={};S.tab="prog";S.ses=null;memSes=null;S.d=null;S.fotos=null;if(!sil)render()}
 
 function vLogin(){
   if(!S.url)return `<section class="sec"><h2>Mi progreso</h2><p>Para entrar, abre el enlace que te envió el entrenador por WhatsApp.</p></section>`;
@@ -176,6 +205,7 @@ function vDatos(){
    <p class="hint">De 1 a 5: 3 es lo esperado para tu edad.</p>
    ${[["Fortalezas",e.fortalezas],["Para mejorar",e.mejorar],["Objetivo a corto plazo",e.objCorto],["Objetivo a mediano plazo",e.objMediano],["Objetivo a largo plazo",e.objLargo]].filter(x=>x[1]).map(x=>`<div class="txt"><span>${x[0]}</span>${esc(x[1])}</div>`).join("")}
    ${ev.length>1?`<div class="txt"><span>Evaluaciones anteriores</span>${ev.slice(0,-1).reverse().map(p=>`${esc(p.periodo||p.fecha)}: ${AR.map(([k,t])=>t+" "+(n(p[k])!=null?f1(n(p[k])):"–")).join(" · ")}`).join("<br>")}</div>`:""}`:'<p class="empty">Aún no tienes evaluaciones.</p>'}</section>`;
+  h+=vMiPerfil();
   h+=`<div class="row" style="justify-content:space-between"><span class="hint">Actualizado ${esc(dL(new Date(S.stamp)))} ${new Date(S.stamp).toLocaleTimeString("es-CO",{hour:"numeric",minute:"2-digit"})}</span><button class="btn sm" data-a="upd" ${S.busy?"disabled":""}>${S.busy?"Actualizando…":"Actualizar"}</button></div>
    <button class="btn sm" data-a="salir" style="align-self:center">Salir de este teléfono</button>`;
   return h;
@@ -184,13 +214,114 @@ function render(){
   const d=S.d,club=d&&d.club,esc0=S.fotos&&S.fotos.escudo;
   document.getElementById("club").textContent=club?[club.nombre,club.categoria].filter(Boolean).join(" · "):"";
   document.getElementById("crest").innerHTML=esc0?`<img src="${esc0}" alt="">`:"";
-  document.getElementById("app").innerHTML=d&&(S.ses||memSes)?vDatos():vLogin();
+  const dentro=!!(d&&(S.ses||memSes));
+  document.body.classList.toggle("con-tabs",dentro);
+  const ae=document.activeElement,aid=ae&&ae.id;
+  document.getElementById("app").innerHTML=!dentro?vLogin():S.tab==="equipo"?vEquipo():S.tab==="muro"?vMuro():vDatos();
+  if(aid){const el=document.getElementById(aid);if(el&&el.tagName==="TEXTAREA"){el.focus();el.selectionStart=el.selectionEnd=el.value.length}}
+  let nav=document.getElementById("tabs");
+  if(dentro){if(!nav){nav=document.createElement("nav");nav.id="tabs";nav.className="tabs";document.body.appendChild(nav)}
+    nav.innerHTML=`<div class="tabs-in">${[["prog","📈","Mi progreso"],["equipo","👥","Equipo"],["muro","🏆","Muro"]].map(([k,i,l])=>`<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}><span>${i}</span>${l}</button>`).join("")}</div>`}
+  else if(nav)nav.remove();
   const f=document.getElementById("login");if(f)f.onsubmit=entrar;
+  ventanaPerfil();
 }
 document.addEventListener("click",ev=>{const t=ev.target.closest("[data-a]");if(!t)return;
+  if(clicComunidad(t))return;
   if(t.dataset.a==="upd")actualizar();
   else if(t.dataset.a==="todos"){S.todos=!S.todos;render()}
   else if(t.dataset.a==="salir"){if(confirm("¿Salir? Se borrará la información guardada en este teléfono."))salir()}});
+
+/* ============ Comunidad: Equipo, Muro y Mi perfil ============ */
+S.tab=LS.get("tab","prog");S.eq=LS.get("equipo",null);S.fx=LS.get("fx",{});S.ver=null;S.eqBusy=false;S.pf=null;
+const RX=[["aplauso","👏"],["fuego","🔥"],["fuerza","💪"],["corazon","❤️"],["balon","⚽"]];
+const ICO={victoria:"🏆",mvp:"⭐",gol:"⚽",asis:"🎯",valla:"🧤",debut:"🌟",test:"📈",cumple:"🎂",anuncio:"📣"};
+const ERRC={apodo_invalido:"Ese apodo no está en la lista.",desc_larga:"La descripción pasa de 280 caracteres.",vacio:"Elige un apodo o escribe una descripción.",limite:"Hiciste muchos cambios seguidos. Intenta más tarde.",red:"Sin señal. Intenta de nuevo cuando tengas conexión."};
+function ses0(){return S.ses||memSes}
+async function cargarEquipo(){
+  const ses=ses0();if(!ses||S.eqBusy||!navigator.onLine)return;
+  S.eqBusy=true;
+  try{const r=await llamar(ses,{op:"jugEquipo"});S.eq=r;if(S.ses)LS.set("equipo",r);render();await cargarFotos()}
+  catch(e){if(e.code==="operacion_desconocida")S.eqErr="El equipo y el muro estarán disponibles cuando el entrenador actualice el servicio.";}
+  S.eqBusy=false;
+}
+async function cargarFotos(){
+  const e=S.eq;if(!e)return;const ses=ses0();
+  const ids=[...new Set([e.dt&&e.dt.foto,...e.jugadores.map(j=>j.foto)].filter(x=>x&&!S.fx[x]))];
+  for(let i=0;i<ids.length;i+=20){try{const r=await llamar(ses,{op:"jugFotos",ids:ids.slice(i,i+20)});Object.assign(S.fx,r.fotos||{});if(S.ses)try{LS.set("fx",S.fx)}catch(x){}render()}catch(x){return}}
+}
+function fotoDe(id){return id&&S.fx[id]||null}
+function avP(j,cls){const f=fotoDe(j.foto);return `<span class="av ${cls||""}">${f?`<img src="${f}" alt="">`:esc(ini(j.nombre))}</span>`}
+function statsTxt(j){const s=j.stats||{};return j.gk?[[s.pj,"Partidos"],[s.vallas,"Vallas invictas"],[s.pa,"Penales atajados"],[s.mvp,"MVP"]]:[[s.pj,"Partidos"],[s.goles,"Goles"],[s.asist,"Asistencias"],[s.mvp,"MVP"]]}
+function vEquipo(){
+  const e=S.eq;
+  if(!e)return `<section class="sec"><h2>Equipo</h2><p class="empty">${esc(S.eqErr||(navigator.onLine?"Cargando el equipo…":"Sin señal: el equipo aparece cuando tengas conexión."))}</p></section>`;
+  const dt=e.dt||{},fd=fotoDe(dt.foto);
+  let h=`<section class="sec"><h3>Entrenador</h3><div class="hero" style="align-items:flex-start"><span class="av">${fd?`<img src="${fd}" alt="">`:esc(ini(dt.nombre))}</span><div style="display:flex;flex-direction:column;gap:4px"><h2 style="font-size:1.35rem">${esc(dt.nombre)}</h2>${dt.cargo?`<p class="hint">${esc(dt.cargo)}</p>`:""}
+   ${dt.nacimiento?`<p class="hint">Nació el ${esc(dt.nacimiento)}</p>`:""}${dt.desde?`<p class="hint">Entrenador desde ${esc(String(dt.desde).toLowerCase())}</p>`:""}</div></div>
+   ${(dt.formacion||[]).length?`<div class="txt"><span>Formación</span>${dt.formacion.map(esc).join("<br>")}</div>`:""}</section>`;
+  const js=e.jugadores.slice().sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999));
+  h+=`<section class="sec"><div class="sec-h"><h3>Compañeros</h3><span class="hint">${js.length}</span></div><div class="grid2">${js.map(j=>`<button class="pc" data-a="ver" data-id="${j.id}">${avP(j)}<b>${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.nombre)}</b>${j.apodo?`<span class="apodo">${esc(j.apodo)}</span>`:""}<small>${esc(j.pos1||"")}</small></button>`).join("")}</div></section>`;
+  return h;
+}
+function ventanaPerfil(){
+  let el=document.getElementById("pf-ovl");
+  const j=S.ver&&S.eq&&S.eq.jugadores.find(x=>x.id===S.ver);
+  if(!j){if(el)el.remove();return}
+  if(!el){el=document.createElement("div");el.id="pf-ovl";el.className="ovl";document.body.appendChild(el)}
+  el.innerHTML=`<div class="box" role="dialog" aria-label="Perfil"><div class="sec-h"><span></span><button class="btn sm" data-a="cerrar">Cerrar</button></div>
+   <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">${avP(j)}<h2>${esc(j.nombre)}</h2>${j.apodo?`<span class="apodo" style="font-size:.9rem">${esc(j.apodo)}</span>`:""}<p class="hint">${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.pos1||"")}${j.pos2?" · "+esc(j.pos2):""}</p></div>
+   ${j.desc?`<p style="margin:0;text-align:center;font-size:1.02rem">“${esc(j.desc)}”</p>`:""}
+   <div class="kpis">${statsTxt(j).map(([v,l])=>`<div class="kpi"><b>${v||0}</b><span>${l}</span></div>`).join("")}</div><p class="hint" style="text-align:center">Temporada</p></div>`;
+}
+function vMuro(){
+  const e=S.eq;
+  if(!e)return `<section class="sec"><h2>Muro</h2><p class="empty">${esc(S.eqErr||(navigator.onLine?"Cargando el muro…":"Sin señal: el muro aparece cuando tengas conexión."))}</p></section>`;
+  const porId={};e.jugadores.forEach(j=>porId[j.id]=j);
+  if(!e.muro.length)return `<section class="sec"><h2>Muro</h2><p class="empty">Aún no hay publicaciones. Aquí aparecerán los logros del equipo.</p></section>`;
+  return `<h2>Muro del equipo</h2>`+e.muro.map(p=>{const j=porId[p.jug[0]],c=e.reac[p.id]||{},mia=e.mias[p.id];const f=j&&fotoDe(j.foto);
+    return `<article class="post ${p.tipo==="anuncio"?"anuncio":""}"><div class="top2"><span class="ic">${f?`<img src="${f}" alt="">`:ICO[p.tipo]||"⭐"}</span><div style="flex:1;min-width:0"><b>${f?ICO[p.tipo]+" ":""}${esc(p.texto)}</b><p class="hint">${p.tipo==="anuncio"?"Anuncio del entrenador · ":""}${esc(dL(pD(p.fecha)))}</p></div></div>
+     <div class="rx">${RX.map(([k,i])=>`<button data-a="rx" data-ev="${esc(p.id)}" data-t="${k}" class="${mia===k?"on":""}" aria-label="${k}">${i}${c[k]?`<b>${c[k]}</b>`:""}</button>`).join("")}</div></article>`}).join("");
+}
+async function reaccionar(ev,t){
+  const e=S.eq,ses=ses0();if(!e||!ses)return;
+  if(!navigator.onLine){alert("Sin señal: intenta cuando tengas conexión.");return}
+  const prev=e.mias[ev]||null,nuevo=prev===t?null:t,c=e.reac[ev]=e.reac[ev]||{};
+  if(prev)c[prev]=Math.max(0,(c[prev]||1)-1);if(nuevo)c[nuevo]=(c[nuevo]||0)+1;if(nuevo)e.mias[ev]=nuevo;else delete e.mias[ev];render();
+  try{await llamar(ses,{op:"jugReaccion",ev,tipo:nuevo});if(S.ses)LS.set("equipo",e)}
+  catch(x){if(nuevo)c[nuevo]--;if(prev){c[prev]=(c[prev]||0)+1;e.mias[ev]=prev}else delete e.mias[ev];render();alert(ERRC[x.code]||"No se pudo guardar la reacción.")}
+}
+function vMiPerfil(){
+  const e=S.eq;if(!e||!e.yo)return "";
+  const y=e.yo,pf=S.pf||(S.pf={apodo:(y.prop&&y.prop.apodo)||y.apodo||"",desc:(y.prop&&y.prop.desc)||y.desc||""});
+  return `<section class="sec"><div class="sec-h"><h3>Mi perfil en el equipo</h3>${y.prop?'<span class="chip w">Esperando aprobación</span>':y.apodo||y.desc?'<span class="chip ok">Aprobado</span>':""}</div>
+   <p class="hint">Así te ven tus compañeros en Equipo. El entrenador aprueba el apodo y la descripción antes de que se vean.</p>
+   ${y.rech?`<div class="banner err">El entrenador no aprobó tu última propuesta${y.rech.motivo?": "+esc(y.rech.motivo):"."}</div>`:""}
+   ${!y.visible?'<div class="banner warn">Por ahora tu perfil no se muestra al equipo.</div>':""}
+   <label class="f">Apodo<select id="pf-apodo" class="sel"><option value="">Sin apodo</option>${(e.apodos||[]).map(a=>`<option ${a===pf.apodo?"selected":""}>${esc(a)}</option>`).join("")}</select></label>
+   <label class="f">Algo sobre mí <span id="pf-cnt" style="text-transform:none;letter-spacing:0;font-weight:500">(${pf.desc.length}/280)</span><textarea id="pf-desc" class="ta" maxlength="280" placeholder="Ej.: Me gusta jugar por la banda y mi ídolo es…">${esc(pf.desc)}</textarea></label>
+   <button class="btn pri" data-a="pf-enviar" ${S.pfBusy?"disabled":""}>${S.pfBusy?"Enviando…":"Enviar para aprobación"}</button></section>`;
+}
+async function enviarPerfil(){
+  const ses=ses0(),pf=S.pf;if(!ses||!pf)return;
+  if(!pf.apodo&&!pf.desc.trim()){alert(ERRC.vacio);return}
+  S.pfBusy=true;render();
+  try{const r=await llamar(ses,{op:"jugPerfil",apodo:pf.apodo,desc:pf.desc});S.eq.yo.prop=r.prop;S.eq.yo.rech=null;if(S.ses)LS.set("equipo",S.eq);alert("¡Listo! El entrenador revisará tu perfil.")}
+  catch(x){alert(ERRC[x.code]||"No se pudo enviar.")}
+  S.pfBusy=false;render();
+}
+document.addEventListener("input",ev=>{const t=ev.target;if(!S.pf)return;if(t.id==="pf-desc"){S.pf.desc=t.value;const c=document.getElementById("pf-cnt");if(c)c.textContent="("+t.value.length+"/280)"}if(t.id==="pf-apodo")S.pf.apodo=t.value});
+function clicComunidad(t){
+  const a=t.dataset.a;
+  if(a==="tab"){S.tab=t.dataset.v;LS.set("tab",S.tab);render();window.scrollTo(0,0);if(S.tab!=="prog")cargarEquipo();return true}
+  if(a==="ver"){S.ver=t.dataset.id;ventanaPerfil();return true}
+  if(a==="cerrar"){S.ver=null;ventanaPerfil();return true}
+  if(a==="rx"){reaccionar(t.dataset.ev,t.dataset.t);return true}
+  if(a==="pf-enviar"){enviarPerfil();return true}
+  return false;
+}
+document.addEventListener("click",ev=>{if(ev.target.id==="pf-ovl"){S.ver=null;ventanaPerfil()}});
+setInterval(()=>{if(document.visibilityState==="visible"&&S.tab!=="prog")cargarEquipo()},60000);
 addEventListener("online",()=>{if(S.offline)actualizar()});
 render();
 if(S.ses)actualizar();
