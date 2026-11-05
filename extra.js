@@ -10,53 +10,53 @@ const css = `
 .msgbox{white-space:pre-wrap;background:var(--surface-2);border-radius:10px;padding:10px;font-size:.88rem;overflow-wrap:anywhere}
 /* Informe A4 (se dibuja fuera de la vista y se convierte en PDF) */
 .rp-host{position:fixed;left:0;top:0;z-index:-5;pointer-events:none}
-.rp-page{width:794px;height:1123px;background:#fff;color:#0f2a22;padding:30px 40px 22px;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Barlow","Segoe UI",Arial,sans-serif;font-size:13px;line-height:1.35;margin-bottom:10px}
-.rp-head{display:flex;align-items:center;gap:12px;background:#0d6b43;color:#fff;border-radius:10px;padding:10px 14px;flex:none}
+.rp-page{width:794px;height:1123px;background:#fff;color:#0E2A40;padding:30px 40px 22px;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Public Sans","Barlow","Segoe UI",Arial,sans-serif;font-size:13px;line-height:1.35;margin-bottom:10px}
+.rp-head{display:flex;align-items:center;gap:12px;background:#0B4F7C;color:#fff;border-radius:10px;padding:10px 14px;flex:none}
 .rp-head img{width:46px;height:46px;object-fit:contain}
 .rp-head .t{flex:1;display:flex;flex-direction:column}
-.rp-head b{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:21px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.rp-head b{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:21px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .rp-head span{font-size:12px;opacity:.9}
 .rp-head .r{text-align:right;font-size:12px}
 .rp-head .r b{font-size:16px}
 .rp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding-top:12px}
-.rp-foot{flex:none;display:flex;justify-content:space-between;font-size:10.5px;color:#53706a;border-top:1px solid #cfe0db;padding-top:6px}
-.rp-blk h4{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#0b5d3a;border-bottom:2px solid #0d6b43;padding-bottom:3px}
+.rp-foot{flex:none;display:flex;justify-content:space-between;font-size:10.5px;color:#46607A;border-top:1px solid #C9E4F4;padding-top:6px}
+.rp-blk h4{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#0B4F7C;border-bottom:2px solid #0B4F7C;padding-bottom:3px}
 .rp-hero{display:flex;gap:16px;align-items:center}
-.rp-ph{width:104px;height:104px;border-radius:50%;overflow:hidden;border:4px solid #0d6b43;display:grid;place-items:center;background:#d6eef8;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:34px;flex:none}
+.rp-ph{width:104px;height:104px;border-radius:50%;overflow:hidden;border:4px solid #0B4F7C;display:grid;place-items:center;background:#d6eef8;font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:34px;flex:none}
 .rp-ph img{width:100%;height:100%;object-fit:cover}
-.rp-hero .n{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;line-height:1}
+.rp-hero .n{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;line-height:1}
 .rp-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.rp-fact{background:#e7f1ee;border-radius:8px;padding:5px 8px}
-.rp-fact span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#53706a;font-weight:700}
+.rp-fact{background:#EAF4FB;border-radius:8px;padding:5px 8px}
+.rp-fact span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#46607A;font-weight:700}
 .rp-fact b{font-size:13px}
 .rp-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.rp-kpi{background:#e7f1ee;border-radius:8px;padding:6px 8px;text-align:center}
-.rp-kpi b{display:block;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:24px;line-height:1}
-.rp-kpi span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#53706a;font-weight:700}
+.rp-kpi{background:#EAF4FB;border-radius:8px;padding:6px 8px;text-align:center}
+.rp-kpi b{display:block;font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:24px;line-height:1}
+.rp-kpi span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#46607A;font-weight:700}
 .rp-t{width:100%;border-collapse:collapse;font-size:12px}
-.rp-t th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#53706a;text-align:left;padding:4px 5px;border-bottom:1px solid #cfe0db}
-.rp-t td{padding:4px 5px;border-bottom:1px solid #e7f1ee;vertical-align:middle}
+.rp-t th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#46607A;text-align:left;padding:4px 5px;border-bottom:1px solid #C9E4F4}
+.rp-t td{padding:4px 5px;border-bottom:1px solid #EAF4FB;vertical-align:middle}
 .rp-t .c{text-align:center}
-.rp-bar{height:8px;border-radius:4px;background:#e7f1ee;width:70px;display:inline-block;vertical-align:middle;overflow:hidden;margin-right:5px}
+.rp-bar{height:8px;border-radius:4px;background:#EAF4FB;width:70px;display:inline-block;vertical-align:middle;overflow:hidden;margin-right:5px}
 .rp-bar i{display:block;height:100%;border-radius:4px}
 .rp-res{display:inline-block;width:18px;height:18px;border-radius:4px;color:#fff;font-weight:800;text-align:center;line-height:18px;font-size:11px;margin-left:4px}
 .rp-dots{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0}
 .rp-dots i{width:12px;height:12px;border-radius:3px;display:block}
-.rp-leg{display:flex;gap:12px;font-size:10.5px;color:#53706a}
+.rp-leg{display:flex;gap:12px;font-size:10.5px;color:#46607A}
 .rp-leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
 .rp-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rp-card{background:#f3f8f6;border:1px solid #cfe0db;border-radius:8px;padding:8px 10px}
+.rp-card{background:#F7FBFE;border:1px solid #C9E4F4;border-radius:8px;padding:8px 10px}
 .rp-card .h{display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px}
 .rp-tb{display:flex;align-items:flex-end;gap:6px;height:70px;margin:4px 0}
-.rp-tb div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:#53706a}
-.rp-tb i{display:block;width:100%;max-width:34px;background:#0b7a4b;border-radius:4px 4px 0 0}
-.rp-tb b{font-size:11px;color:#0f2a22}
+.rp-tb div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:#46607A}
+.rp-tb i{display:block;width:100%;max-width:34px;background:#1874B0;border-radius:4px 4px 0 0}
+.rp-tb b{font-size:11px;color:#0E2A40}
 .rp-area{display:grid;grid-template-columns:110px 1fr 24px;align-items:center;gap:8px;margin:3px 0}
-.rp-sc{display:flex;gap:4px}.rp-sc i{width:26px;height:10px;border-radius:3px;background:#e7f1ee}.rp-sc i.on{background:#0b7a4b}
-.rp-txt{margin:2px 0 6px}.rp-txt span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#53706a;font-weight:700;display:block}
+.rp-sc{display:flex;gap:4px}.rp-sc i{width:26px;height:10px;border-radius:3px;background:#EAF4FB}.rp-sc i.on{background:#1874B0}
+.rp-txt{margin:2px 0 6px}.rp-txt span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#46607A;font-weight:700;display:block}
 .rp-firma{display:flex;justify-content:flex-end;margin-top:26px}
-.rp-firma div{width:250px;border-top:1px solid #0f2a22;text-align:center;padding-top:4px;font-size:12px}
-.rp-empty{color:#53706a;font-style:italic}
+.rp-firma div{width:250px;border-top:1px solid #0E2A40;text-align:center;padding-top:4px;font-size:12px}
+.rp-empty{color:#46607A;font-style:italic}
 `;
 const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
@@ -86,7 +86,7 @@ function rango(I) {
 const enRango = (d, R) => !!d && (!R.desde || d >= R.desde) && (!R.hasta || d <= R.hasta);
 
 /* ---------- Contenido del informe (sin comparaciones con el equipo) ---------- */
-const C = { ok: "#1f8a4c", warn: "#c98a00", bad: "#c3352b", sky: "#2ea3d4", mut: "#93b0a8", acc: "#0b7a4b" };
+const C = { ok: "#1f8a4c", warn: "#c98a00", bad: "#c3352b", sky: "#2ea3d4", mut: "#93b0a8", acc: "#1874B0" };
 const ASIS_C = { Presente: C.ok, Ausente: C.bad, Justificado: C.warn, Lesionado: C.sky };
 function bloques(j, R) {
   const out = [], v = x => x == null || x === "" ? "–" : esc(x);
@@ -106,12 +106,12 @@ function bloques(j, R) {
       const r = S.stats.find(x => x.pt === m.id && x.jid === j.id), dur = m.dur || S.config.duracion || 80;
       const cond = !r ? "No convocado" : r.min > 0 ? (r.cond === "Titular" ? "Titular" : "Suplente") : "No jugó";
       const min = r ? r.min : 0;
-      return `<tr><td>${esc(dShort(m.fecha))}</td><td>${esc(m.rival)}<br><span style="color:#53706a;font-size:10.5px">${esc(m.comp)}</span></td><td class="c">${m.gf}-${m.gc}<span class="rp-res" style="background:${m.res === "G" ? C.ok : m.res === "E" ? C.mut : C.bad}">${m.res}</span></td>
-        <td>${cond}</td><td>${(w => `<span class="rp-bar" style="background:linear-gradient(90deg,${r && r.cond === "Titular" ? C.acc : C.sky} ${w}%,#e7f1ee ${w}%)"></span>`)(Math.round(Math.min(100, min / dur * 100)))}${min}'</td>
+      return `<tr><td>${esc(dShort(m.fecha))}</td><td>${esc(m.rival)}<br><span style="color:#46607A;font-size:10.5px">${esc(m.comp)}</span></td><td class="c">${m.gf}-${m.gc}<span class="rp-res" style="background:${m.res === "G" ? C.ok : m.res === "E" ? C.mut : C.bad}">${m.res}</span></td>
+        <td>${cond}</td><td>${(w => `<span class="rp-bar" style="background:linear-gradient(90deg,${r && r.cond === "Titular" ? C.acc : C.sky} ${w}%,#EAF4FB ${w}%)"></span>`)(Math.round(Math.min(100, min / dur * 100)))}${min}'</td>
         ${gk ? (g => `<td class="c">${g == null ? "" : g === 0 ? "0 ✓" : g}</td><td class="c">${r && r.pa ? r.pa : ""}</td>`)(r && r.min > 0 ? (r.gr != null ? r.gr : (r.min >= dur ? m.gc : null)) : null) : `<td class="c">${r && r.g ? r.g : ""}</td><td class="c">${r && r.a ? r.a : ""}</td>`}<td class="c">${r && r.min > 0 && r.nota != null ? fmt1(r.nota) : ""}</td><td class="c">${r ? (r.am ? r.am + " TA " : "") + (r.ro ? r.ro + " TR" : "") : ""}</td></tr>`;
     });
     const head = `<table class="rp-t"><tr><th>Fecha</th><th>Rival</th><th class="c">Resultado</th><th>Condición</th><th>Minutos</th>${gk ? '<th class="c">GR</th><th class="c">PA</th>' : '<th class="c">G</th><th class="c">A</th>'}<th class="c">Nota</th><th class="c">Tarjetas</th></tr>`;
-    const nota = gk ? '<p style="font-size:10.5px;color:#53706a;margin:4px 0 0">GR: goles recibidos con él en cancha (✓ valla invicta). PA: penales atajados.</p>' : "";
+    const nota = gk ? '<p style="font-size:10.5px;color:#46607A;margin:4px 0 0">GR: goles recibidos con él en cancha (✓ valla invicta). PA: penales atajados.</p>' : "";
     for (let i = 0; i < filas.length; i += 16) out.push(`<h4>Partido a partido${i ? " (continuación)" : ""}</h4>${head}${filas.slice(i, i + 16).join("")}</table>${i + 16 >= filas.length ? nota : ""}`);
   }
   // Asistencia
@@ -125,9 +125,9 @@ function bloques(j, R) {
   const tarjetas = Object.keys(porTest).map(n => {
     const m = testMeta(n), a = porTest[n].slice().sort((x, y) => (x.f || 0) - (y.f || 0)), max = Math.max(...a.map(x => x.res), 0) || 1;
     const dif = a.length > 1 ? a[a.length - 1].res - a[0].res : null, mejora = dif == null ? null : (m.mejor === "Menor" ? dif < 0 : dif > 0);
-    return `<div class="rp-card"><div class="h"><span>${esc(n)}</span><span style="color:#53706a;font-weight:500">${esc(m.u === "s" && a.some(x => x.res >= 60) ? "min:s" : m.u)} · mejor si es ${esc(String(m.mejor || "Mayor").toLowerCase())}</span></div>
+    return `<div class="rp-card"><div class="h"><span>${esc(n)}</span><span style="color:#46607A;font-weight:500">${esc(m.u === "s" && a.some(x => x.res >= 60) ? "min:s" : m.u)} · mejor si es ${esc(String(m.mejor || "Mayor").toLowerCase())}</span></div>
       <div class="rp-tb">${a.slice(-6).map(x => `<div><b>${fmtV(x.res, m.u)}</b><i style="height:${Math.max(4, x.res / max * 48)}px"></i>${esc(x.toma || dShort(x.f))}</div>`).join("")}</div>
-      ${dif != null && dif !== 0 ? `<div style="font-size:11.5px;color:${mejora ? C.ok : C.bad};font-weight:700">${mejora ? "Mejoró" : "Bajó"} ${esc(fmtT(Math.abs(dif), m.u))} desde la primera toma</div>` : dif === 0 ? '<div style="font-size:11.5px;color:#53706a">Igual que en la primera toma</div>' : '<div style="font-size:11.5px;color:#53706a">Una sola toma</div>'}</div>`;
+      ${dif != null && dif !== 0 ? `<div style="font-size:11.5px;color:${mejora ? C.ok : C.bad};font-weight:700">${mejora ? "Mejoró" : "Bajó"} ${esc(fmtT(Math.abs(dif), m.u))} desde la primera toma</div>` : dif === 0 ? '<div style="font-size:11.5px;color:#46607A">Igual que en la primera toma</div>' : '<div style="font-size:11.5px;color:#46607A">Una sola toma</div>'}</div>`;
   });
   if (!tarjetas.length) out.push('<h4>Tests físicos</h4><p class="rp-empty">Sin tests registrados en el periodo.</p>');
   for (let i = 0; i < tarjetas.length; i += 4) out.push(`<h4>Tests físicos${i ? " (continuación)" : ""}</h4><div class="rp-2">${tarjetas.slice(i, i + 4).join("")}</div>`);
@@ -137,7 +137,7 @@ function bloques(j, R) {
   else {
     const e = evs[evs.length - 1], prev = evs.slice(0, -1);
     out.push(`<h4>Evaluación formativa · ${esc(e.per || "")} (${esc(dLong(e.f))})</h4><div class="rp-2"><div>${AREAS.map(([k, t]) => `<div class="rp-area"><span>${t}</span><span class="rp-sc">${[1, 2, 3, 4, 5].map(n => `<i class="${e[k] != null && n <= e[k] ? "on" : ""}"></i>`).join("")}</span><b>${e[k] != null ? fmt1(e[k]) : "–"}</b></div>`).join("")}
-      <p style="font-size:10.5px;color:#53706a;margin:4px 0 0">Escala 1 a 5: 3 es lo esperado para su edad.</p>
+      <p style="font-size:10.5px;color:#46607A;margin:4px 0 0">Escala 1 a 5: 3 es lo esperado para su edad.</p>
       ${prev.length ? `<table class="rp-t" style="margin-top:6px"><tr><th>Anteriores</th>${AREAS.map(a => `<th class="c">${a[1].slice(0, 3)}</th>`).join("")}</tr>${prev.slice(-4).map(p => `<tr><td>${esc(p.per || dShort(p.f))}</td>${AREAS.map(([k]) => `<td class="c">${p[k] != null ? fmt1(p[k]) : "–"}</td>`).join("")}</tr>`).join("")}</table>` : ""}</div>
       <div>${[["Fortalezas", e.fort], ["Aspectos a mejorar", e.mej], ["Objetivo a corto plazo", e.oc], ["Objetivo a mediano plazo", e.om], ["Objetivo a largo plazo", e.ol]].filter(x => x[1]).map(x => `<div class="rp-txt"><span>${x[0]}</span>${esc(x[1])}</div>`).join("") || '<p class="rp-empty">Sin comentarios.</p>'}</div></div>`);
   }
@@ -145,7 +145,7 @@ function bloques(j, R) {
   const les = S.lesiones.filter(l => l.jid === j.id && enRango(l.fecha, R)), san = S.sanciones.filter(x => x.jid === j.id && enRango(x.fecha, R));
   out.push(`<h4>Lesiones y sanciones</h4>${les.length || san.length ? `<table class="rp-t"><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Estado</th></tr>${les.map(l => `<tr><td>${esc(dShort(l.fecha))}</td><td>Lesión</td><td>${esc(l.zona)}${l.desc ? " · " + esc(l.desc) : ""}${l.dias != null ? " · " + l.dias + " días" : ""}</td><td>${l.altaReal ? "Alta " + esc(dShort(l.altaReal)) : esc(l.estado || "En recuperación")}</td></tr>`).join("")}
     ${san.map(x => `<tr><td>${esc(dShort(x.fecha))}</td><td>Sanción</td><td>${esc(x.motivo)}${x.fechas != null ? " · " + x.fechas + " fechas" : ""}</td><td>${esc(x.estado || "")}</td></tr>`).join("")}</table>` : '<p class="rp-empty">Sin lesiones ni sanciones en el periodo.</p>'}
-    <div class="rp-firma"><div>${esc(CLUB.dt || "")}<br><span style="color:#53706a">Entrenador${CLUB.nombre ? " · " + esc(CLUB.nombre) : ""}</span></div></div>`);
+    <div class="rp-firma"><div>${esc(CLUB.dt || "")}<br><span style="color:#46607A">Entrenador${CLUB.nombre ? " · " + esc(CLUB.nombre) : ""}</span></div></div>`);
   return out;
 }
 function cabecera(R) {
