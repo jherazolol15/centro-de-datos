@@ -25,6 +25,7 @@ setTimeout(function(){
 },15000);
 </script>
 <script>try{var _t=JSON.parse(localStorage.getItem("cdd1:theme")||'"auto"');if(_t==="light"||_t==="dark")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script>
+<script>(function(){try{if(!localStorage.getItem("sige:on"))return}catch(e){return}addEventListener("DOMContentLoaded",function(){var a=document.createElement("a");a.href="/sige-jaguares/";a.id="sigeBtn";a.setAttribute("aria-label","Volver al inicio de SIGE Jaguares");a.textContent="SIGE";a.style.cssText="position:fixed;left:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:50;background:#0B4F7C;color:#fff;font:800 12px/1 system-ui,sans-serif;letter-spacing:.08em;padding:11px 13px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.3);text-decoration:none;border:2px solid #7DD3F7";document.body.appendChild(a)})})();</script>
 <script type="module" src="adapter.js"></script>
 </head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -519,7 +520,7 @@ const TABS=[["inicio","Inicio",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6
 const SUBJ=[["jugadores","Lista"],["convocatoria","Convocatoria"],["profundidad","Profundidad"],["comparar","Comparar"],["bajas","Lesiones y sanciones"],["accesos","Acceso jugadores"],["comunidad","Comunidad"]];
 const SUBR=[["registrar","Asistencia"],["reg-test","Test"],["reg-eval","Evaluación"],["reg-lesion","Lesión"],["reg-sancion","Sanción"]];
 function route(){const h=(location.hash||"").replace(/^#/,"");const m=h.match(/^(jugador|partido)-([A-Za-z0-9]+)$/);if(m)return {v:m[1],id:m[2]};if(SUBJ.some(t=>t[0]===h)||SUBR.some(t=>t[0]===h)||SUBS.some(t=>t[0]===h))return {v:h};return {v:TABS.some(t=>t[0]===h)?h:"inicio"}}
-function subnav(list,cur){return `<nav class="subnav" aria-label="Secciones">${list.map(t=>`<a href="#${t[0]}" ${t[0]===cur?'aria-current="page"':""}>${t[1]}</a>`).join("")}</nav>`}
+function subnav(list,cur){if(window.__esAsis)return '<div class="banner ok">Modo asistente: aquí tomas la asistencia de la sesión. El resto del Centro es solo para el DT.</div>';return `<nav class="subnav" aria-label="Secciones">${list.map(t=>`<a href="#${t[0]}" ${t[0]===cur?'aria-current="page"':""}>${t[1]}</a>`).join("")}</nav>`}
 function renderTabs(cur){
   const base=cur==="jugador"||SUBJ.some(t=>t[0]===cur)?"jugadores":cur==="partido"?"partidos":SUBR.some(t=>t[0]===cur)?"registrar":SUBS.some(t=>t[0]===cur)?"minutos":cur;
   document.getElementById("tabs").innerHTML=TABS.map(t=>`<a href="#${t[0]}" ${base===t[0]?'aria-current="page"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${t[2]}</svg>${t[1]}${t[0]==="registrar"&&(S.queue.length+S.wq.length)?`<span class="badge">${S.queue.length+S.wq.length}</span>`:""}</a>`).join("");
@@ -528,7 +529,7 @@ function compChips(){const cs=comps();if(cs.length<2)return "";return `<div clas
 function groupChips(){const gs=grupos();if(gs.length<2)return "";return `<div class="chips" role="group" aria-label="Grupo">${["Todos",...gs].map(c=>`<button class="fchip" data-grupo="${esc(c)}" aria-pressed="${S.grupo===c}">${c==="Todos"?"Todos los grupos":"Grupo "+esc(c)}</button>`).join("")}</div>`}
 
 function render(){
-  const r=route();renderTabs(r.v);
+  let r=route();if(window.__esAsis&&r.v!=="registrar")r={v:"registrar"};renderTabs(r.v);if(window.__esAsis){document.getElementById("tabs").innerHTML="";const tt=document.querySelector(".top .ttl b");if(tt)tt.textContent="Asistencia"}
   const st=document.getElementById("stamp");
   if(S.stamp){const d=new Date(S.stamp);st.textContent=(S.offline?"Sin conexión · datos de ":"Actualizado ")+d.toLocaleTimeString("es-CO",{hour:"numeric",minute:"2-digit"})}
   const app=document.getElementById("app");

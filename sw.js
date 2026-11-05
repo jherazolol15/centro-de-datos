@@ -1,5 +1,5 @@
 // Guarda la app en el teléfono para que abra sin señal.
-const CACHE = "cdd-v21-2";
+const CACHE = "cdd-v30-1";
 const CORE = ["./", "index.html", "adapter.js", "extra.js", "jugador.html", "manifest.webmanifest", "manifest-jugador.webmanifest", "icon-192.png", "icon-512.png"];
 const LIBS = ["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE).then(() => Promise.all(LIBS.map(u => c.add(u).catch(() => {}))))).then(() => self.skipWaiting())); });

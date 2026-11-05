@@ -5,6 +5,7 @@
 <meta name="robots" content="noindex">
 <title>Mi progreso</title>
 <link rel="manifest" href="manifest-jugador.webmanifest">
+<script>(function(){try{if(!localStorage.getItem("sige:on"))return}catch(e){return}addEventListener("DOMContentLoaded",function(){var a=document.createElement("a");a.href="/sige-jaguares/";a.id="sigeBtn";a.setAttribute("aria-label","Volver al inicio de SIGE Jaguares");a.textContent="SIGE";a.style.cssText="position:fixed;left:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:50;background:#0B4F7C;color:#fff;font:800 12px/1 system-ui,sans-serif;letter-spacing:.08em;padding:11px 13px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.3);text-decoration:none;border:2px solid #7DD3F7";document.body.appendChild(a)})})();</script>
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
@@ -76,7 +77,7 @@ label.f input{font-size:1.1rem;text-transform:none;letter-spacing:0;color:var(--
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .more{background:none;border:0;color:var(--sky);font-weight:700;padding:4px 0;cursor:pointer;align-self:flex-start}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
 .tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;font-size:.72rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer}
 .tabs button span{font-size:1.25rem;line-height:1}
 .tabs button[aria-current="page"]{color:var(--accent)}
@@ -130,6 +131,16 @@ select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:va
 .emogrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
 .emogrid button{font-size:1.35rem;min-height:42px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;padding:0}
 .emogrid button.on{border:2px solid var(--accent);background:var(--sky-soft)}
+.board{background:var(--brand);color:#fff;border-radius:14px;padding:14px 12px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center}
+.board .tm{display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;font-size:.9rem;min-width:0;overflow-wrap:anywhere}
+.board .tm img{width:52px;height:52px;object-fit:contain}
+.board .sc{font-family:var(--display);font-weight:800;font-size:2.8rem;line-height:1}
+.board .sc small{display:block;font-size:.8rem;letter-spacing:.06em;font-weight:700;opacity:.85;margin-top:4px}
+.livedot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d4d;margin-left:4px;vertical-align:middle;animation:lp 1.2s infinite}
+@keyframes lp{50%{opacity:.25}}
+.tl{display:flex;flex-direction:column;gap:8px}
+.tl .ev{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start}
+.tl .ev b.m{font-family:var(--display);font-size:1.05rem;text-align:right}
 .prevw{max-width:100%;max-height:240px;border-radius:12px;object-fit:cover}
 </style>
 </head><body>
@@ -178,7 +189,7 @@ async function entrar(ev){
 async function actualizar(){
   const ses=S.ses||memSes;if(!ses||S.busy)return;
   S.busy=true;render();
-  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null;setTimeout(cargarEquipo,0)}
+  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null;setTimeout(cargarEquipo,0);setTimeout(()=>cargarVivo(true),500)}
   catch(e){if(e.code==="acceso_invalido"||e.code==="inactivo"){salir(true);S.err="El código cambió o el acceso ya no está activo. Pide el código nuevo al entrenador.";}else S.offline=true}
   S.busy=false;render();
 }
@@ -245,11 +256,11 @@ function render(){
   const dentro=!!(d&&(S.ses||memSes));
   document.body.classList.toggle("con-tabs",dentro);
   const ae=document.activeElement,aid=ae&&ae.id;
-  document.getElementById("app").innerHTML=!dentro?vLogin():S.tab==="equipo"?vEquipo():S.tab==="muro"?vMuro():vDatos();
+  document.getElementById("app").innerHTML=!dentro?vLogin():S.tab==="equipo"?vEquipo():S.tab==="muro"?vMuro():S.tab==="vivo"?vVivo():vDatos();
   if(aid){const el=document.getElementById(aid);if(el&&el.tagName==="TEXTAREA"){el.focus();el.selectionStart=el.selectionEnd=el.value.length}}
   let nav=document.getElementById("tabs");
   if(dentro){if(!nav){nav=document.createElement("nav");nav.id="tabs";nav.className="tabs";document.body.appendChild(nav)}
-    nav.innerHTML=`<div class="tabs-in">${[["prog","📈","Mi progreso"],["equipo","👥","Equipo"],["muro","🏆","Muro"]].map(([k,i,l])=>`<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}><span>${i}</span>${l}</button>`).join("")}</div>`}
+    nav.innerHTML=`<div class="tabs-in">${[["prog","📈","Mi progreso"],["equipo","👥","Equipo"],["muro","🏆","Muro"],["vivo","⚽","En vivo"]].map(([k,i,l])=>`<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}><span>${i}</span>${l}${k==="vivo"&&S.vv&&S.vv.actual&&vivoEstado(S.vv).enJuego?'<i class="livedot"></i>':""}</button>`).join("")}</div>`}
   else if(nav)nav.remove();
   const f=document.getElementById("login");if(f)f.onsubmit=entrar;
   ventanaPerfil();
@@ -261,7 +272,7 @@ document.addEventListener("click",ev=>{const t=ev.target.closest("[data-a]");if(
   else if(t.dataset.a==="salir"){if(confirm("¿Salir? Se borrará la información guardada en este teléfono."))salir()}});
 
 /* ============ Comunidad: Equipo, Muro y Mi perfil ============ */
-S.tab=LS.get("tab","prog");S.eq=LS.get("equipo",null);S.fx=LS.get("fx",{});S.ver=null;S.eqBusy=false;S.pf=null;
+S.tab=LS.get("tab","prog");if(/^#(vivo|muro|equipo|prog)$/.test(location.hash)){S.tab=location.hash.slice(1);LS.set("tab",S.tab);history.replaceState(null,"",location.pathname)}S.eq=LS.get("equipo",null);S.fx=LS.get("fx",{});S.ver=null;S.eqBusy=false;S.pf=null;
 const RX=[["aplauso","👏"],["fuego","🔥"],["fuerza","💪"],["corazon","❤️"],["balon","⚽"]];
 const ICO={victoria:"🏆",mvp:"⭐",gol:"⚽",hattrick:"⚽",asis:"🎯",valla:"🧤",debut:"🌟",test:"📈",cumple:"🎂",anuncio:"📣",promocion:"🚀",post:"💬"};
 const BADGE={mvp:"⭐ MVP del partido",hattrick:"⚽⚽⚽ Hat-trick",debut:"🌟 Debut",cumple:"🎂 Cumpleaños",promocion:"🚀 Ascenso"};
@@ -387,7 +398,9 @@ async function enviarPerfil(){
 document.addEventListener("input",ev=>{const t=ev.target;if(!S.pf)return;if(t.id==="pf-desc"){S.pf.desc=t.value;const c=document.getElementById("pf-cnt");if(c)c.textContent="("+t.value.length+"/280)"}if(t.id==="pf-apodo")S.pf.apodo=t.value});
 function clicComunidad(t){
   const a=t.dataset.a;
-  if(a==="tab"){S.tab=t.dataset.v;LS.set("tab",S.tab);render();window.scrollTo(0,0);if(S.tab!=="prog")cargarEquipo();return true}
+  if(a==="tab"){S.tab=t.dataset.v;LS.set("tab",S.tab);render();window.scrollTo(0,0);if(S.tab==="vivo")cargarVivo(true);else if(S.tab!=="prog")cargarEquipo();return true}
+  if(a==="animo"){animo();return true}
+  if(a==="aplauso"){aplaudir(t.dataset.ev,t.dataset.t);return true}
   if(a==="ver"){S.ver=t.dataset.id;ventanaPerfil();return true}
   if(a==="cerrar"){S.ver=null;ventanaPerfil();return true}
   if(a==="rx"){reaccionar(t.dataset.ev,t.dataset.t);return true}
@@ -403,6 +416,52 @@ function clicComunidad(t){
 }
 document.addEventListener("click",ev=>{if(ev.target.id==="pf-ovl"){S.ver=null;ventanaPerfil()}});
 setInterval(()=>{if(document.visibilityState==="visible"&&S.tab!=="prog")cargarEquipo()},60000);
+
+/* ============ En vivo (SIGE Jaguares): el partido activo minuto a minuto ============ */
+S.vv=LS.get("vivo",null);S.vvT=0;S.reacPend=[];
+async function cargarVivo(force){
+  const ses=ses0();if(!ses||!navigator.onLine||(S.vvBusy))return;if(!force&&Date.now()-S.vvT<12000)return;
+  S.vvBusy=true;
+  try{const body={op:"jugVista"};if(S.reacPend.length){body.reac=S.reacPend.slice(0,40)}const r=await llamar(ses,body);if(body.reac)S.reacPend=S.reacPend.slice(body.reac.length);S.vv=r;S.vvT=Date.now();if(S.ses)LS.set("vivo",r);if(S.tab==="vivo"||r.actual)render();cargarFotosVivo()}
+  catch(e){if(e.code==="operacion_desconocida")S.vvErr="El partido en vivo estará disponible cuando el entrenador actualice el servicio."}
+  S.vvBusy=false;
+}
+async function cargarFotosVivo(){const v=S.vv;if(!v)return;const ses=ses0();const ids=[...new Set([v.marca&&v.marca.logo,...Object.values(v.fotos||{}),escRival(v)].filter(x=>x&&!S.fx[x]))];if(!ids.length)return;try{const r=await llamar(ses,{op:"jugFotos",ids:ids.slice(0,20)});Object.assign(S.fx,r.fotos||{});if(S.ses)try{LS.set("fx",S.fx)}catch(x){}render()}catch(x){}}
+function escKey(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim()}
+function escRival(v){const E=v.escudos||{},L=E.lista||[],k=escKey(v.partido&&v.partido.rival);if(!k)return null;const al=(E.alias||{})[k];if(al==="none")return null;if(al&&L.some(e=>e.id===al))return al;const f=L.filter(e=>escKey(e.nombre)===k);return f.length===1?f[0].id:null}
+function vivoEstado(v){const p=v.partido||{},r=p.reloj||{},dur=Number(p.duracion)||80,h=dur/2,now=Date.now(),ep=p.estadoPartido;
+  if(r.fin2)return {txt:ep&&ep.estado&&ep.estado!=="Finalizado"?ep.estado:"Final",fin:true};
+  if(r.inicio2){const m=Math.floor((now-r.inicio2)/60000);return {txt:(h+Math.min(m,h)+1)+"'"+(m>=h?" +"+(m-h+1):"")+" · 2.º tiempo",enJuego:true}}
+  if(r.fin1)return {txt:"Entretiempo",enJuego:true};
+  if(r.inicio1){const m=Math.floor((now-r.inicio1)/60000);return {txt:(Math.min(m,h)+1)+"'"+(m>=h?" +"+(m-h+1):"")+" · 1.er tiempo",enJuego:true}}
+  return {txt:"Por empezar"}}
+function vVivo(){
+  const v=S.vv;
+  if(!v)return `<section class="sec"><h2>En vivo</h2><p class="empty">${esc(S.vvErr||(navigator.onLine?"Buscando el partido…":"Sin señal: el partido aparece cuando tengas conexión."))}</p></section>`;
+  if(!v.actual)return `<section class="sec"><h2>En vivo</h2><p class="empty">No hay un partido en juego. Cuando el entrenador active el partido, aquí lo verás minuto a minuto.</p></section>`;
+  const p=v.partido||{},jug={};(v.jugadores||[]).forEach(j=>jug[j.id]=j);const nm=id=>{const j=jug[id];return j?(j.dorsal?j.dorsal+" · ":"")+j.nombre:""};
+  const evs=(v.eventos||[]).slice().sort((a,b)=>(b.periodo-a.periodo)||(b.minuto-a.minuto)||(b.ts-a.ts));
+  const gf=evs.filter(e=>e.tipo==="gol").length,gc=evs.filter(e=>e.tipo==="gol_rival").length,est=vivoEstado(v);
+  const loc=p.localia!=="Visitante",logo=v.marca&&v.marca.logo&&fotoDe(v.marca.logo),er=escRival(v),erf=er&&fotoDe(er);
+  const nos=`<div class="tm">${logo?`<img src="${logo}" alt="">`:"🐆"}<span>Jaguares</span></div>`,riv=`<div class="tm">${erf?`<img src="${erf}" alt="">`:"🛡️"}<span>${esc(p.rival||"Rival")}</span></div>`;
+  const TX={gol:"⚽ Gol",gol_rival:"⚽ Gol del rival",amarilla:"🟨 Amarilla",roja:"🟥 Roja",cambio:"🔁 Cambio",penal_atajado:"🧤 Penal atajado",atencion:"🩹 Atención médica",formacion:"📋 Cambio de formación"};
+  const ap=(v.aplausos&&v.aplausos.ev)||{};
+  let h=`<div class="board">${loc?nos:riv}<div class="sc">${loc?gf:gc} - ${loc?gc:gf}<small>${esc(est.txt)}${est.enJuego?'<i class="livedot"></i>':""}</small></div>${loc?riv:nos}</div>`;
+  if(p.competicion||p.lugar)h+=`<p class="hint" style="text-align:center">${esc([p.competicion,p.lugar,p.formacion?"Formación "+p.formacion:""].filter(Boolean).join(" · "))}</p>`;
+  if(v.fans)h+=`<button class="btn pri" data-a="animo">📣 ¡Vamos Jaguares!${v.aplausos&&v.aplausos.animo?` <b>${v.aplausos.animo}</b>`:""}</button>`;
+  h+=`<section class="sec"><h3>Minuto a minuto</h3>${evs.length?`<div class="tl">${evs.map(e=>{let d="";
+      if(e.tipo==="gol")d=nm(e.jugador)+(e.rel?` · asistencia de ${nm(e.rel)}`:"");else if(e.tipo==="cambio")d=`Entra ${nm(e.rel)} · sale ${nm(e.jugador)}`;else if(e.tipo==="formacion")d=e.formacion||"";else if(e.jugador)d=nm(e.jugador);
+      const c=ap[e.id]||{};
+      return `<div class="ev"><b class="m">${e.minuto?e.minuto+"'":""}</b><div><b>${TX[e.tipo]||esc(e.tipo)}</b>${d?`<p class="hint" style="color:var(--ink)">${esc(d)}</p>`:""}${v.fans&&e.tipo==="gol"?`<div class="rx" style="margin-top:6px">${[["aplauso","👏"],["fuego","🔥"],["corazon","❤️"]].map(([k,i])=>`<button data-a="aplauso" data-ev="${esc(e.id)}" data-t="${k}">${i}${c[k]?`<b>${c[k]}</b>`:""}</button>`).join("")}</div>`:""}</div></div>`}).join("")}</div>`:'<p class="empty">Aún no hay eventos.</p>'}</section>`;
+  const tit=(p.titulares||[]).filter(Boolean),sup=(p.convocados||[]).filter(id=>!tit.includes(id));
+  if(tit.length)h+=`<section class="sec"><h3>Titulares</h3><p style="margin:0">${tit.map(nm).filter(Boolean).map(esc).join("<br>")}</p>${sup.length?`<h3 style="margin-top:8px">Suplentes</h3><p style="margin:0">${sup.map(nm).filter(Boolean).map(esc).join("<br>")}</p>`:""}</section>`;
+  h+=`<p class="hint" style="text-align:center">Se actualiza solo cada 15 segundos.</p>`;
+  return h;
+}
+function animo(){S.reacPend.push({e:"_animo"});if(S.vv&&S.vv.aplausos)S.vv.aplausos.animo=(S.vv.aplausos.animo||0)+1;render();cargarVivo(true)}
+function aplaudir(ev,t){S.reacPend.push({e:ev,t});const ap=S.vv&&S.vv.aplausos;if(ap){const c=(ap.ev[ev]=ap.ev[ev]||{});c[t]=(c[t]||0)+1}render();cargarVivo(true)}
+setInterval(()=>{if(document.visibilityState!=="visible"||!ses0())return;if(S.tab==="vivo")cargarVivo(false);else if(Date.now()-S.vvT>60000)cargarVivo(true)},15000);
+setInterval(()=>{if(S.tab==="vivo"&&S.vv&&S.vv.actual)render()},30000);
 addEventListener("online",()=>{if(S.offline)actualizar()});
 render();
 if(S.ses)actualizar();

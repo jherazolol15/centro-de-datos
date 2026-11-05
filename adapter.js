@@ -11,7 +11,7 @@ const ls = {
 let cfg = ls.get("cfg", null);
 if (!cfg && !ls.get("nopev", false)) {
   const pev = ls.get("cfg", null, "pev3:");
-  if (pev && pev.url && pev.clave && pev.rol === "dt") { cfg = { url: pev.url, clave: pev.clave, rol: "dt", desde: "pev" }; ls.set("cfg", cfg); }
+  if (pev && pev.url && pev.clave && (pev.rol === "dt" || pev.rol === "asis")) { cfg = { url: pev.url, clave: pev.clave, rol: pev.rol, desde: "pev" }; ls.set("cfg", cfg); }
 }
 
 async function puente(body, timeoutMs) {
@@ -168,8 +168,8 @@ function pantallaAcceso(pre, msg) {
       if (!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)/.test(url)) throw new Error("La URL debe ser la del puente (termina en /exec).");
       const r = await fetch(url, { method: "POST", body: JSON.stringify({ clave, op: "quien" }) }).then(x => x.json());
       if (!r.ok) throw new Error(r.error === "clave_incorrecta" ? "La clave no es correcta." : "El puente respondió con un error: " + (r.detalle || r.error));
-      if (r.rol !== "dt") throw new Error("Esta app es solo para el DT: usa la clave del DT, no la del asistente.");
-      cfg = { url, clave, rol: "dt" }; ls.set("cfg", cfg); location.reload();
+      if (r.rol !== "dt" && r.rol !== "asis") throw new Error("Usa la clave del DT o la del asistente.");
+      cfg = { url, clave, rol: r.rol }; ls.set("cfg", cfg); location.reload();
     } catch (err) { pantallaAcceso({ url, clave }, (err && err.message) || "No se pudo contactar el puente. Revisa la señal y la URL."); }
   };
 }
@@ -180,6 +180,8 @@ const api = { use: async name => (name === "mcp" ? mcp : null) };
   if (!cfg) { pantallaAcceso(null, ""); return; }
   await abrirIDB(); await idbAll();
   gate("");
+  window.__esAsis = cfg.rol === "asis";
+  if (window.__esAsis) document.documentElement.classList.add("modo-asis");
   if (window.__setReady) window.__setReady(api);
 })();
 addEventListener("online", () => { if (window.__alVolverSenal) try { window.__alVolverSenal(); } catch (e) {} });
