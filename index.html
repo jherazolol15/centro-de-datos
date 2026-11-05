@@ -24,6 +24,7 @@ setTimeout(function(){
   };
 },15000);
 </script>
+<script>try{var _t=JSON.parse(localStorage.getItem("cdd1:theme")||'"auto"');if(_t==="light"||_t==="dark")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script>
 <script type="module" src="adapter.js"></script>
 </head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -306,7 +307,7 @@ label.f input,label.f select,label.f textarea{font-size:1rem;text-transform:none
   <div class="top-in">
     <span id="crest"></span>
     <div class="ttl"><b>Centro de datos</b><span id="stamp">Jaguares de Córdoba · Sub-15</span></div>
-    <button class="ibtn" id="refresh" type="button" aria-label="Actualizar datos de la hoja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <button class="ibtn" id="thm" type="button" aria-label="Cambiar entre modo día y noche"></button><button class="ibtn" id="refresh" type="button" aria-label="Actualizar datos de la hoja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
   </div>
 </header>
 <main id="app"><div class="skel"></div><div class="skel"></div></main>
@@ -388,7 +389,7 @@ async function readRetry(range){try{return await readRange(range)}catch(e){if(e&
 const RANGES={
   pA:"Plantilla!A2:E41",pB:"Plantilla!H2:Q41",pC:"Plantilla!W2:X41",
   partidos:"Partidos!A2:M200",stats:"Stats_Partido!A2:U2000",eventos:"Eventos!A2:K4000",inf:"Informe_Partido!A2:AJ300",
-  les:"Lesiones!A2:K300",san:"Sanciones!A2:J300",ses:"Sesiones!A2:K3000",panel:"Panel!A11:X50",config:"Config!A1:B60",listas:"Listas!C2:Q14",tests:"Tests_Fisicos!A2:I800",eval:"Eval_Formativa!A2:Q500",bien:"Bienestar!A2:U1000",conv:"Convocatoria!A2:R44",prof:"Profundidad!A5:J16"
+  les:"Lesiones!A2:L300",san:"Sanciones!A2:J300",ses:"Sesiones!A2:K3000",panel:"Panel!A11:X50",config:"Config!A1:B60",listas:"Listas!C2:Q14",tests:"Tests_Fisicos!A2:I800",eval:"Eval_Formativa!A2:Q500",bien:"Bienestar!A2:U1000",conv:"Convocatoria!A2:R44",prof:"Profundidad!A5:J16"
 };
 async function loadAll(){
   if(S.loading)return;S.loading=true;setRefreshSpin(true);
@@ -415,7 +416,7 @@ function parseAll(r){
   const A=r.pA||[],B=r.pB||[],C=r.pC||[];
   S.jug=[];
   A.forEach((row,i)=>{if(!row||!row[0]||!row[1])return;const b=B[i]||[],c=C[i]||[];
-    S.jug.push({id:row[0],label:row[1],nombre:nameOf(row[1]),dorsal:row[2]||"",edad:b[0]||"",trim:b[1]||"",pos1:b[2]||"",pos2:b[3]||"",pierna:b[4]||"",est:b[5]||"",peso:b[6]||"",imc:b[7]||"",estado:b[8]||"Activo",disp:b[9]||"Disponible",obs:c[0]||"",grupo:String(c[1]||"").trim()})});
+    S.jug.push({id:row[0],label:row[1],nombre:nameOf(row[1]),dorsal:row[2]||"",edad:b[0]||"",trim:b[1]||"",pos1:b[2]||"",pos2:b[3]||"",pierna:b[4]||"",est:b[5]||"",peso:b[6]||"",imc:b[7]||"",estado:b[8]||"Activo",disp:b[9]||"Disponible",obs:c[0]||"",grupo:String(c[1]||"").trim(),retirado:/retir/i.test(b[8]||""),row:i+2})});
   S.fixtures=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]&&(x[6]===""||x[6]==null)).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||""})).filter(p=>p.fecha&&p.fecha>=today0()).sort((a,b)=>a.fecha-b.fecha);
   S.partidos=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||"",micro:x[5]||"",gf:num(x[6]),gc:num(x[7]),res:x[8]||"",pts:num(x[9]),label:x[10]||"",obs:x[11]||"",dur:num(x[12])||80}))
     .filter(p=>p.gf!=null&&p.gc!=null).sort((a,b)=>(a.fecha||0)-(b.fecha||0)||a.id.localeCompare(b.id));
@@ -423,7 +424,7 @@ function parseAll(r){
   S.stats=(r.stats||[]).filter(x=>x&&x[1]&&x[5]).map(x=>({pt:x[1],comp:x[3]||"",jid:x[5],cond:x[6]||"",ent:num(x[7]),sal:num(x[8]),min:num(x[9])||0,g:num(x[10])||0,a:num(x[11])||0,am:num(x[12])||0,ro:num(x[13])||0,mvp:/^(s[ií]|1|x|true|mvp)$/i.test(String(x[14]||"").trim()),nota:numDec(x[15]),rpe:numDec(x[16]),gr:num(x[18]),pa:num(x[19]),obs:x[20]||""}));
   S.eventos=(r.eventos||[]).filter(x=>x&&x[1]).map(x=>({id:x[0],pt:x[1],per:x[2]||"",min:num(x[3]),tipo:x[4]||"",jug:x[5]||"",jid:x[6]||"",rel:x[7]||"",det:x[8]||"",mp:num(x[9]),mr:num(x[10])}));
   S.informes={};(r.inf||[]).forEach(x=>{if(x&&x[0])S.informes[x[0]]=x});
-  S.lesiones=(r.les||[]).filter(x=>x&&x[1]).map(x=>({jid:x[1],fecha:pDate(x[2]),zona:x[3]||"",desc:x[4]||"",ctx:x[5]||"",altaPrev:pDate(x[6]),altaReal:pDate(x[7]),dias:num(x[8]),estado:x[9]||"",obs:x[10]||""}));
+  S.lesiones=(r.les||[]).filter(x=>x&&x[1]).map(x=>({jid:x[1],fecha:pDate(x[2]),zona:x[3]||"",desc:x[4]||"",ctx:x[5]||"",altaPrev:pDate(x[6]),altaReal:pDate(x[7]),dias:num(x[8]),estado:x[9]||"",obs:x[10]||"",seg:x[11]||""}));
   S.sanciones=(r.san||[]).filter(x=>x&&x[1]).map(x=>({jid:x[1],fecha:pDate(x[2]),partido:x[3]||"",motivo:x[4]||"",fechas:num(x[5]),cumplidas:num(x[6]),rest:num(x[7]),estado:x[8]||"",obs:x[9]||""}));
   S.sesiones=(r.ses||[]).map((x,i)=>({row:i+2,fecha:pDate(x&&x[0]),micro:x&&x[1]||"",tipo:x&&x[2]||"",jug:x&&x[3]||"",jid:(x&&x[4])||String(x&&x[3]||"").slice(0,3),asis:x&&x[5]||"",min:num(x&&x[6]),rpe:numDec(x&&x[7]),obs:x&&x[9]||""})).filter(s=>s.fecha&&s.jug);
   S.sesRows=(r.ses||[]).length;
@@ -449,7 +450,7 @@ function parseAll(r){
 function comps(){return [...new Set(S.partidos.map(p=>p.comp).filter(Boolean))]}
 function fMatches(){return S.partidos.filter(p=>S.comp==="Todas"||p.comp===S.comp)}
 function grupos(){return [...new Set(S.jug.map(j=>j.grupo).filter(Boolean))]}
-function fJug(){return S.jug.filter(j=>S.grupo==="Todos"||j.grupo===S.grupo)}
+function fJug(){return S.jug.filter(j=>!j.retirado&&(S.grupo==="Todos"||j.grupo===S.grupo))}
 function jById(id){return S.jug.find(j=>j.id===id)}
 function record(ms){const o={pj:ms.length,g:0,e:0,p:0,gf:0,gc:0,pts:0};ms.forEach(m=>{o[m.res.toLowerCase()]++;o.gf+=m.gf;o.gc+=m.gc;o.pts+=m.pts});o.eff=o.pj?o.pts/(o.pj*3):null;return o}
 function pStats(jid,ms){
@@ -463,7 +464,7 @@ function isGK(j){return posGroup(j&&j.pos1)==="por"}
 function availMin(ms){const ids=new Set(S.stats.map(s=>s.pt));return ms.filter(m=>ids.has(m.id)).reduce((a,m)=>a+(m.dur||S.config.duracion||80),0)}
 function activeInjury(jid){return S.lesiones.find(l=>l.jid===jid&&!l.altaReal&&!/alta|cerrad|recuper/i.test(l.estado))}
 function activeSanction(jid){return S.sanciones.find(s=>s.jid===jid&&/activa|pendiente/i.test(s.estado))}
-function dispChip(j){const d=j.disp||"";if(/Lesion/i.test(d))return '<span class="chip les">Lesionado</span>';if(/Suspend/i.test(d))return '<span class="chip sus">Suspendido</span>';if(/Inactiv/i.test(d)||/Inactiv/i.test(j.estado))return '<span class="chip ina">Inactivo</span>';return ""}
+function dispChip(j){const d=j.disp||"";if(/Lesion/i.test(d))return '<span class="chip les">Lesionado</span>';if(/Suspend/i.test(d))return '<span class="chip sus">Suspendido</span>';if(j.retirado)return '<span class="chip ina">Retirado</span>';if(/Inactiv/i.test(d)||/Inactiv/i.test(j.estado))return '<span class="chip ina">Inactivo</span>';return ""}
 function sessionsOf(jid){return S.sesiones.filter(s=>s.jid===jid).sort((a,b)=>a.fecha-b.fecha)}
 function asisPct(rows){const c=rows.filter(s=>s.asis==="Presente"||s.asis==="Ausente");return c.length?c.filter(s=>s.asis==="Presente").length/c.length:null}
 function goalEvents(){return S.eventos.filter(e=>/^gol/i.test(e.tipo))}
@@ -538,7 +539,7 @@ function render(){
   if(r.v==="inicio")html+=vInicio();
   else if(r.v==="partidos")html+=vPartidos();
   else if(r.v==="partido")html+=vPartido(r.id);
-  else if(r.v==="jugadores")html+=vJugadores();
+  else if(r.v==="jugadores")html+=vJugadores()+(window.retiradosCard?window.retiradosCard():"");
   else if(r.v==="jugador")html+=vJugador(r.id);
   else if(r.v==="minutos")html+=vMinutos();
   else if(r.v==="registrar")html+=vRegistrar();
@@ -578,7 +579,7 @@ function vInicio(){
   const lastInf=[...ms].reverse().map(m=>S.informes[m.id]).find(x=>x&&x[30]);
   h+=`<section class="sec"><h3>Foco de la semana</h3>${lastInf&&(lastInf[28]||lastInf[29])?`${lastInf[29]?`<div><span class="hint">Qué trabajar</span><p class="txt">${esc(lastInf[29])}</p></div>`:""}${lastInf[28]?`<div><span class="hint">Qué mantener</span><p class="txt">${esc(lastInf[28])}</p></div>`:""}<p class="hint">Del informe del último partido.</p>`:'<p class="empty">Aparece cuando completas “qué mantener” y “qué cambiar” en el cierre de un partido.</p>'}</section></div>`;
   // Disponibilidad
-  const act=S.jug.filter(j=>!/Inactiv/i.test(j.estado));
+  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));
   const les=act.filter(j=>/Lesion/i.test(j.disp)||activeInjury(j.id)),sus=act.filter(j=>/Suspend/i.test(j.disp)||activeSanction(j.id));
   const outIds=new Set([...les,...sus].map(j=>j.id));const disp=act.filter(j=>!outIds.has(j.id));
   h+=`<div class="cols"><section class="sec"><div class="sec-h"><h3>Disponibilidad hoy</h3><span class="hint">${act.length} activos</span></div>
@@ -706,6 +707,7 @@ function vJugador(id){
   h+=`<section class="sec"><h3>Lesiones y sanciones</h3>${les.length||san.length?`<div class="list">${les.map(l=>`<div class="li"><span class="chip les">Lesión</span><div class="meta"><span class="nm">${esc(l.zona)}${l.desc?" · "+esc(l.desc):""}</span><span class="sub">${esc(dLong(l.fecha))}${l.dias!=null?" · "+l.dias+" días":""}${l.altaReal?" · alta "+esc(dLong(l.altaReal)):l.altaPrev?" · alta prevista "+esc(dLong(l.altaPrev)):""} · ${esc(l.estado||"")}</span></div></div>`).join("")}
    ${san.map(x=>`<div class="li"><span class="chip sus">Sanción</span><div class="meta"><span class="nm">${esc(x.motivo)}</span><span class="sub">${esc(dLong(x.fecha))}${x.fechas!=null?" · "+(x.cumplidas||0)+" de "+x.fechas+" fechas":""} · ${esc(x.estado||"")}</span></div></div>`).join("")}</div>`:'<p class="empty">Sin lesiones ni sanciones registradas.</p>'}${les.some(l=>!l.altaReal)||san.some(x=>/activa|pendiente/i.test(x.estado))?btnLink("#bajas","Dar de alta o cerrar sanción"):""}</section></div>`;
   h+=fichaE3(j);
+  h+=(window.gestionCard?window.gestionCard(j):"");
   return h;
 }
 function avgAsis(){const v=S.jug.map(j=>asisPct(sessionsOf(j.id))).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length*100:null}
@@ -718,7 +720,7 @@ function cmpRow(t,v,avg,max,u){
 /* ============ Minutos y equidad ============ */
 function vMinutos(){
   const ms=fMatches(),av=availMin(ms);
-  const pl=fJug().filter(j=>!/Inactiv/i.test(j.estado)).map(j=>({j,s:pStats(j.id,ms)})).sort((a,b)=>b.s.min-a.s.min);
+  const pl=fJug().filter(j=>!/Inactiv|Retir/i.test(j.estado)).map(j=>({j,s:pStats(j.id,ms)})).sort((a,b)=>b.s.min-a.s.min);
   let h=`${subnav(SUBS,"minutos")}<h2>Minutos y equidad</h2>${groupChips()}${compChips()}`;
   if(!av)return h+`<section class="sec"><p class="empty">Aún no hay minutos registrados.</p></section>`;
   const tot=pl.reduce((a,b)=>a+b.s.min,0),played=pl.filter(x=>x.s.min>0).length,low=pl.filter(x=>x.s.min/av<0.25);
@@ -742,13 +744,13 @@ function vMinutos(){
 /* ============ Registrar asistencia ============ */
 function newReg(){
   const lastMicro=[...S.sesiones].reverse().find(s=>s.micro);
-  const roster=S.jug.filter(j=>!/Inactiv/i.test(j.estado));
+  const roster=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));
   const p={};roster.forEach(j=>{p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});
   return {fecha:todayISO(),micro:String(S.config.micro||(lastMicro&&lastMicro.micro)||""),tipo:S.tipos[0]||"Campo",min:"90",rpe:"5",grupo:S.grupo,p};
 }
-function ensureReg(){if(!S.reg){S.reg=LS.get("draft",null)||newReg()}const reg=S.reg;S.jug.filter(j=>!/Inactiv/i.test(j.estado)).forEach(j=>{if(!reg.p[j.id])reg.p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});return reg}
+function ensureReg(){if(!S.reg){S.reg=LS.get("draft",null)||newReg()}const reg=S.reg;S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).forEach(j=>{if(!reg.p[j.id])reg.p[j.id]={asis:/Lesion/i.test(j.disp)?"Lesionado":"Presente",rpe:"",min:"",obs:"",open:false}});return reg}
 function saveDraft(){LS.set("draft",S.reg)}
-function regPlayers(){const reg=ensureReg();return S.jug.filter(j=>!/Inactiv/i.test(j.estado)&&(reg.grupo==="Todos"||!reg.grupo||j.grupo===reg.grupo)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
+function regPlayers(){const reg=ensureReg();return S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)&&(reg.grupo==="Todos"||!reg.grupo||j.grupo===reg.grupo)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
 function existingFor(reg){const d=isoToDate(reg.fecha);return S.sesiones.filter(s=>dKey(s.fecha)===dKey(d)&&s.tipo===reg.tipo)}
 function vRegistrar(){
   const reg=ensureReg(),pl=regPlayers(),gs=grupos();
@@ -830,10 +832,10 @@ function vBajas(){
   <div class="row"><a class="btn sm" href="#reg-lesion" style="text-decoration:none;display:inline-flex;align-items:center">Registrar lesión</a><a class="btn sm" href="#reg-sancion" style="text-decoration:none;display:inline-flex;align-items:center">Registrar sanción</a></div></section>`;
   // Activas
   h+=`<div class="cols"><section class="sec"><h3>Lesiones activas</h3>${act.length?`<div class="list">${act.map(l=>{const j=jById(l.jid);const k=l.jid+"|"+dKey(l.fecha);
-     let ret="";if(l.altaPrev){const d=daysBetween(t0,l.altaPrev);ret=d>0?`vuelve en ${d} ${d===1?"día":"días"}`:d===0?"alta prevista hoy":`alta prevista vencida hace ${-d} ${d===-1?"día":"días"}`}
+     let ret=l.altaPrev?"":"alta indefinida";if(l.altaPrev){const d=daysBetween(t0,l.altaPrev);ret=d>0?`vuelve en ${d} ${d===1?"día":"días"}`:d===0?"alta prevista hoy":`alta prevista vencida hace ${-d} ${d===-1?"día":"días"}`}
      const open=S.act&&S.act.k===k&&S.act.t==="alta";
-     return `<div class="ccard"><div class="att-top">${avatar(j||{nombre:l.jid},"sm")}<div class="meta" style="flex:1;min-width:0"><a class="nm" href="#jugador-${esc(l.jid)}" style="color:inherit;font-weight:700">${esc(j?shortName(j.nombre):l.jid)}</a><span class="sub">${esc(l.zona)}${l.desc?" · "+esc(l.desc):""} · desde ${esc(dLong(l.fecha))} · ${l.dias!=null?l.dias+" días":""}</span>${ret?`<span class="sub" style="color:${/vencida/.test(ret)?"var(--danger)":"var(--ink)"};font-weight:600">${ret}</span>`:""}</div>${open?"":`<button class="btn sm" data-act="e2-open" data-t="alta" data-k="${esc(k)}">Dar de alta</button>`}</div>
-     ${open?`<div class="fgrid"><label class="f">Fecha del alta<input type="date" id="alta-fecha" value="${esc(S.act.fecha)}"></label><label class="f">Observación<input type="text" id="alta-obs" value="${esc(S.act.obs||"")}" placeholder="Opcional"></label><button class="btn" data-act="e2-close">Cancelar</button><button class="btn pri" data-act="e2-alta" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Confirmar alta"}</button></div>`:""}</div>`}).join("")}</div>`:'<p class="empty">No hay lesiones activas.</p>'}</section>`;
+     return `<div class="ccard"><div class="att-top">${avatar(j||{nombre:l.jid},"sm")}<div class="meta" style="flex:1;min-width:0"><a class="nm" href="#jugador-${esc(l.jid)}" style="color:inherit;font-weight:700">${esc(j?shortName(j.nombre):l.jid)}</a><span class="sub">${esc(l.zona)}${l.desc?" · "+esc(l.desc):""} · desde ${esc(dLong(l.fecha))} · ${l.dias!=null?l.dias+" días":""}</span>${ret?`<span class="sub" style="color:${/vencida/.test(ret)?"var(--danger)":"var(--ink)"};font-weight:600">${ret}${l.seg?` · <span class="chip b">${esc(l.seg)}</span>`:""}</span>`:""}</div></div>${S.act&&S.act.k===k?"":`<div class="row"><button class="btn sm" data-act="e2-open" data-t="segui" data-k="${esc(k)}">Actualizar seguimiento</button><button class="btn sm" data-act="e2-open" data-t="alta" data-k="${esc(k)}">Dar de alta</button></div>`}
+     ${S.act&&S.act.k===k&&S.act.t==="segui"?segForm(l):""}${open?`<div class="fgrid"><label class="f">Fecha del alta<input type="date" id="alta-fecha" value="${esc(S.act.fecha)}"></label><label class="f">Observación<input type="text" id="alta-obs" value="${esc(S.act.obs||"")}" placeholder="Opcional"></label><button class="btn" data-act="e2-close">Cancelar</button><button class="btn pri" data-act="e2-alta" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Confirmar alta"}</button></div>`:""}</div>`}).join("")}</div>`:'<p class="empty">No hay lesiones activas.</p>'}</section>`;
   h+=`<section class="sec"><h3>Sanciones vigentes</h3>${sact.length?`<div class="list">${sact.map(x=>{const j=jById(x.jid);const k=x.jid+"|"+dKey(x.fecha);const open=S.act&&S.act.k===k&&(S.act.t==="fechas"||S.act.t==="cumplida");
      return `<div class="ccard"><div class="att-top">${avatar(j||{nombre:x.jid},"sm")}<div class="meta" style="flex:1;min-width:0"><a class="nm" href="#jugador-${esc(x.jid)}" style="color:inherit;font-weight:700">${esc(j?shortName(j.nombre):x.jid)}</a><span class="sub">${esc(x.motivo)} · ${esc(dLong(x.fecha))}</span><span class="sub" style="font-weight:600;color:var(--ink)">${x.fechas!=null?`${x.cumplidas||0} de ${x.fechas} fechas cumplidas · faltan ${x.rest!=null?x.rest:Math.max(0,x.fechas-(x.cumplidas||0))}`:`Sanción sin definir · ${x.cumplidas||0} fechas de Liga jugadas desde la falta`}</span></div></div>${open?"":`<div class="row"><button class="btn sm" data-act="e2-open" data-t="fechas" data-k="${esc(k)}">${x.fechas!=null?"Cambiar fechas de sanción":"Fijar fechas de sanción"}</button><button class="btn sm" data-act="e2-open" data-t="cumplida" data-k="${esc(k)}">Dar por cumplida</button></div>`}
      ${open&&S.act.t==="cumplida"?`<div class="banner ok">Se registra con ${x.cumplidas||0} ${(x.cumplidas||0)===1?"fecha":"fechas"} de sanción (las de Liga ya jugadas después de la falta) y queda cumplida. El jugador vuelve a estar disponible.</div><div class="fgrid"><button class="btn" data-act="e2-close">Cancelar</button><button class="btn pri" data-act="e2-cumplida" data-n="${x.cumplidas||0}" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Confirmar"}</button></div>`:open?`<div class="fgrid"><label class="f" style="grid-column:1/-1">Fechas de sanción que dio la Liga<input type="number" inputmode="numeric" id="fx-n" min="0" max="30" value="${esc(S.act.n)}"></label><button class="btn" data-act="e2-close">Cancelar</button><button class="btn pri" data-act="e2-fechas" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Guardar"}</button></div><p class="hint">Las fechas cumplidas se cuentan solas con los partidos de Liga jugados después de la falta.</p>`:""}</div>`}).join("")}</div>`:'<p class="empty">No hay sanciones vigentes.</p>'}</section></div>`;
@@ -848,7 +850,7 @@ function vBajas(){
      :`<div class="ev"><b style="font-size:.85rem">${esc(dShort(e.f))}</b><span><span class="chip sus">Sanción</span> ${nm} · ${esc(e.o.motivo)} <span class="hint">· ${esc(e.o.estado)}</span></span></div>`}).join("")}</div>`:'<p class="empty">Sin registros.</p>'}</section></div>`;
   return h;
 }
-function playerOptions(sel){return `<option value="">Elige un jugador</option>`+S.jug.filter(j=>!/Inactiv/i.test(j.estado)).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(j=>`<option value="${j.id}" ${j.id===sel?"selected":""}>${esc(j.nombre)}${j.dorsal?" · "+esc(j.dorsal):""}</option>`).join("")}
+function playerOptions(sel){return `<option value="">Elige un jugador</option>`+S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(j=>`<option value="${j.id}" ${j.id===sel?"selected":""}>${esc(j.nombre)}${j.dorsal?" · "+esc(j.dorsal):""}</option>`).join("")}
 function vRegLesion(){
   if(!S.les)S.les={jid:"",fecha:todayISO(),zona:"",desc:"",ctx:S.contextos[0]||"",prev:"",obs:"",confirm:false};
   const f=S.les,j=jById(f.jid);
@@ -858,9 +860,10 @@ function vRegLesion(){
    <label class="f">Contexto<select id="ls-ctx">${S.contextos.map(c=>`<option ${c===f.ctx?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
    <label class="f">Zona corporal<select id="ls-zona"><option value="">Elige la zona</option>${S.zonas.map(c=>`<option ${c===f.zona?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
    <label class="f">Alta prevista<input type="date" id="ls-prev" value="${esc(f.prev)}"></label>
+   <label class="f" style="grid-column:1/-1">Seguimiento<select id="ls-seg"><option value="">—</option>${SEGS.map(c=>`<option ${c===f.seg?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
    <label class="f" style="grid-column:1/-1">Descripción<input type="text" id="ls-desc" value="${esc(f.desc)}" placeholder="Ej.: esguince grado 1"></label>
    <label class="f" style="grid-column:1/-1">Observaciones<input type="text" id="ls-obs" value="${esc(f.obs)}" placeholder="Opcional"></label></div>
-   <p class="hint">El jugador pasa a “Lesionado” en la hoja hasta que le des el alta.</p></section>`;
+   <p class="hint">El jugador pasa a “Lesionado” en la hoja hasta que le des el alta. Si aún no hay fecha (por ejemplo, falta el veredicto del fisio), deja vacía el alta prevista: queda como <b>indefinida</b>.</p></section>`;
   h+=f.confirm?`<section class="sec" style="border:2px solid var(--accent)"><h3>Confirmar</h3><p style="margin:0">Lesión de <b>${esc(j?j.nombre:"")}</b> en ${esc(f.zona)}, ${esc(dLong(isoToDate(f.fecha)))}${f.prev?", alta prevista "+esc(dLong(isoToDate(f.prev))):""}.</p><div class="fgrid"><button class="btn" data-act="e2-back">Volver</button><button class="btn pri" data-act="e2-saveles" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Guardar en la hoja"}</button></div></section>`
    :`<button class="btn pri wide" data-act="e2-revles">Revisar y guardar</button>`;
   return h;
@@ -880,13 +883,15 @@ function vRegSancion(){
    :`<button class="btn pri wide" data-act="e2-revsan">Revisar y guardar</button>`;
   return h;
 }
+const SEGS=["Sin valoración del fisio","En valoración","En fisioterapia","Readaptación"];
+function segForm(l){const A=S.act;return `<div class="fgrid"><label class="f">Nueva alta prevista<input type="date" id="sg-prev" value="${esc(A.prev||"")}" ${A.indef?"disabled":""}></label><label class="f" style="justify-content:flex-end"><span class="row" style="gap:8px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--ink)"><input type="checkbox" id="sg-indef" ${A.indef?"checked":""} style="width:22px;height:22px;min-height:0"> Indefinida</span></label><label class="f" style="grid-column:1/-1">Seguimiento<select id="sg-seg"><option value="">—</option>${SEGS.map(c=>`<option ${c===A.seg?"selected":""}>${esc(c)}</option>`).join("")}</select></label><button class="btn" data-act="e2-close">Cancelar</button><button class="btn pri" data-act="e2-segui" ${S.busy?"disabled":""}>${S.busy?"Guardando…":"Guardar"}</button></div><p class="hint">No da de alta: el jugador sigue como lesionado.</p>`}
 function dateFormula(iso){const d=isoToDate(iso);return `=DATE(${d.getFullYear()};${d.getMonth()+1};${d.getDate()})`}
 function lastRow(rows){let last=0;rows.forEach((x,i)=>{if(x&&x.some(v=>v!==""&&v!=null))last=i+1});return last+2}
 async function writeLesion(f){
   const fresh=await readRange("Lesiones!A2:K300");const k=dKey(isoToDate(f.fecha));
   if(fresh.some(x=>x&&String(x[0]||"").slice(0,3)===f.jid&&dKey(pDate(x[2]))===k))throw {code:"dup",message:"Ya hay una lesión de este jugador en esa fecha."};
   const r=lastRow(fresh),j=jById(f.jid);
-  await gs("update_values",{range:`Lesiones!A${r}:K${r}`,values:[[j.label,null,dateFormula(f.fecha),f.zona,f.desc,f.ctx,f.prev?dateFormula(f.prev):"",null,null,null,f.obs||null]]});
+  await gs("update_values",{range:`Lesiones!A${r}:L${r}`,values:[[j.label,null,dateFormula(f.fecha),f.zona,f.desc,f.ctx,f.prev?dateFormula(f.prev):"",null,null,null,f.obs||null,f.seg||null]]});
 }
 async function writeSancion(f){
   const fresh=await readRange("Sanciones!A2:J300");const k=dKey(isoToDate(f.fecha));
@@ -897,13 +902,14 @@ async function writeSancion(f){
 async function findRow(sheet,range,k){const fresh=await readRange(range);const [jid,dk]=k.split("|");const i=fresh.findIndex(x=>x&&String(x[0]||"").slice(0,3)===jid&&dKey(pDate(x[2]))===dk);if(i<0)throw {code:"gone",message:"No encontré ese registro en la hoja. Toca Actualizar."};return {r:i+2,row:fresh[i]}}
 async function writeAlta(k,fecha,obs){const {r,row}=await findRow("Lesiones","Lesiones!A2:K300",k);if(row[7])throw {code:"dup",message:"Esa lesión ya tiene alta en la hoja."};
   await gs("update_values",{range:`Lesiones!H${r}:K${r}`,values:[[dateFormula(fecha),null,null,obs?[row[10],"Alta: "+obs].filter(Boolean).join(" "):null]]});}
+async function writeSegui(k,prev,seg){const {r}=await findRow("Lesiones","Lesiones!A2:K300",k);await gs("update_values",{range:`Lesiones!G${r}:L${r}`,values:[[prev?dateFormula(prev):"",null,null,null,null,seg||""]]})}
 async function writeFechas(k,n){const {r}=await findRow("Sanciones","Sanciones!A2:J300",k);await gs("update_values",{range:`Sanciones!F${r}`,values:[[Number(n)]]})}
-const JOBS={les:(f)=>writeLesion(f),san:(f)=>writeSancion(f),alta:(k,f,o)=>writeAlta(k,f,o),fechas:(k,n)=>writeFechas(k,n),conv:(e)=>writeConv(e),tests:(f,rows)=>writeTests(f,rows),eval:(f)=>writeEval(f)};
-const JOB_TXT={les:"Lesión",san:"Sanción",alta:"Alta de lesión",fechas:"Fechas de sanción",conv:"Convocatoria",tests:"Tests",eval:"Evaluación"};
+const JOBS={segui:(k,p,g)=>writeSegui(k,p,g),les:(f)=>writeLesion(f),san:(f)=>writeSancion(f),alta:(k,f,o)=>writeAlta(k,f,o),fechas:(k,n)=>writeFechas(k,n),conv:(e)=>writeConv(e),tests:(f,rows)=>writeTests(f,rows),eval:(f)=>writeEval(f)};
+const JOB_TXT={segui:"Seguimiento de lesión",les:"Lesión",san:"Sanción",alta:"Alta de lesión",fechas:"Fechas de sanción",conv:"Convocatoria",tests:"Tests",eval:"Evaluación"};
 function isNet(e){return !navigator.onLine||!!(e&&(e.code==="server_unavailable"||e.code==="upstream_error"))}
 function jobDesc(q){const a=q.a||[],f=a[0]||{};const j=f.jid?jById(f.jid):null;
   if(q.k==="tests")return `Tests · ${f.test||""} · ${(a[1]||[]).length} jug.`;if(q.k==="conv")return `Convocatoria · ${Object.keys(f).length} cambios`;
-  if(q.k==="alta"||q.k==="fechas"){const jj=jById(String(a[0]||"").split("|")[0]);return JOB_TXT[q.k]+(jj?" · "+shortName(jj.nombre):"")}
+  if(q.k==="alta"||q.k==="fechas"||q.k==="segui"){const jj=jById(String(a[0]||"").split("|")[0]);return JOB_TXT[q.k]+(jj?" · "+shortName(jj.nombre):"")}
   return JOB_TXT[q.k]+(j?" · "+shortName(j.nombre):"")}
 function encolar(job){S.wq.push(job);LS.set("wq",S.wq)}
 async function runWrite(job,okMsg,after){
@@ -980,7 +986,7 @@ async function writeConv(edits){
 const PITCH_POS=[["Delantero centro",50,12],["Extremo izquierdo",17,21],["Extremo derecho",83,21],["Mediocampista ofensivo",50,31],["Mediocampista mixto",50,45],["Mediocampista defensivo",50,59],["Lateral izquierdo",15,67],["Lateral derecho",85,67],["Defensa central",50,75],["Portero",50,90]];
 function covClass(c,total){if(/descub|sin cob|no cub/i.test(c))return "bad";if(/justa/i.test(c))return "warn";if(/cubierta/i.test(c))return "ok";return total>=2?"ok":total===1?"warn":"bad"}
 function vProfundidad(){
-  const avail=j=>!/Lesion|Suspend|Inactiv/i.test(j.disp)&&!/Inactiv/i.test(j.estado);
+  const avail=j=>!/Lesion|Suspend|Inactiv/i.test(j.disp)&&!/Inactiv|Retir/i.test(j.estado);
   const sel=S.profSel||"";
   const info=p=>{const pr=S.jug.filter(j=>j.pos1===p),al=S.jug.filter(j=>j.pos2===p);const s=S.prof[p];return {pr,al,total:s?s.total:pr.filter(avail).length+al.filter(avail).length,disp:s?s.disp:pr.filter(avail).length,cob:s?s.cob:""}};
   let h=`${subnav(SUBJ,"profundidad")}<h2>Profundidad por posición</h2>
@@ -1029,7 +1035,7 @@ function vComparar(){
 /* ============ Etapa 2 · Eventos ============ */
 function bindForm(obj,map,t){if(!S[obj])return false;for(const id in map){if(t.id===id){S[obj][map[id]]=t.value;S[obj].confirm=false;return true}}return false}
 document.addEventListener("input",ev=>{const t=ev.target;
-  if(bindForm("les",{"ls-jid":"jid","ls-fecha":"fecha","ls-ctx":"ctx","ls-zona":"zona","ls-prev":"prev","ls-desc":"desc","ls-obs":"obs"},t))return;
+  if(bindForm("les",{"ls-jid":"jid","ls-fecha":"fecha","ls-ctx":"ctx","ls-zona":"zona","ls-prev":"prev","ls-desc":"desc","ls-obs":"obs","ls-seg":"seg"},t))return;
   if(bindForm("san",{"sn-jid":"jid","sn-fecha":"fecha","sn-partido":"partido","sn-motivo":"motivo","sn-fechas":"fechas","sn-obs":"obs"},t)){if(t.id==="sn-partido"){const p=S.partidos.find(x=>(x.label||x.id)===t.value);if(p&&p.fecha){S.san.fecha=dKey(p.fecha);render()}}return}
   if(S.act){if(t.id==="alta-fecha")S.act.fecha=t.value;if(t.id==="alta-obs")S.act.obs=t.value;if(t.id==="fx-n")S.act.n=t.value}
   if(t.dataset.cv==="just"){setConv(t.dataset.id,"just",t.value);const bar=document.querySelector(".stickybar");if(!bar||!Object.keys(S.convEdit).length)render()}
@@ -1040,6 +1046,8 @@ document.addEventListener("change",ev=>{const t=ev.target;
 });
 document.addEventListener("click",ev=>{const t=ev.target.closest("[data-act]");if(!t)return;const a=t.dataset.act;if(!/^(e2|cv|pf)-/.test(a))return;
   if(a==="pf-sel"){S.profSel=t.dataset.p;render();return}
+  if(a==="e2-open"&&t.dataset.t==="segui"){const k=t.dataset.k,l=S.lesiones.find(x=>x.jid+"|"+dKey(x.fecha)===k);S.act={t:"segui",k,prev:l&&l.altaPrev?dKey(l.altaPrev):"",indef:!(l&&l.altaPrev),seg:l?l.seg:""};render();return}
+  if(a==="e2-segui"){const A=S.act;if(!A.indef&&!A.prev){toast("Elige la nueva alta prevista o marca Indefinida.");return}runWrite({k:"segui",a:[A.k,A.indef?"":A.prev,A.seg]},"Seguimiento actualizado. El jugador sigue lesionado.",()=>{S.act=null});return}
   if(a==="e2-open"){const k=t.dataset.k;if(t.dataset.t==="alta")S.act={t:"alta",k,fecha:todayISO(),obs:""};else{const x=S.sanciones.find(s=>s.jid+"|"+dKey(s.fecha)===k);S.act={t:t.dataset.t,k,n:x&&x.fechas!=null?String(x.fechas):""}}render();return}
   if(a==="e2-close"){S.act=null;render();return}
   if(a==="e2-alta"){const A=S.act;if(!A.fecha){toast("Elige la fecha del alta.");return}runWrite({k:"alta",a:[A.k,A.fecha,A.obs]},"Alta guardada. El jugador vuelve a estar disponible.",()=>{S.act=null});return}
@@ -1070,7 +1078,7 @@ function parseRes(raw){const m=/^(\d{1,3})\s*(?:[:'´’-]|\s)\s*([0-5]?\d(?:[.,
 function fmtR(v){return v==null||!isFinite(v)?"–":Number(v).toLocaleString("es-CO",{maximumFractionDigits:2})}
 function btnLink(href,txt,pri){return `<a class="btn sm ${pri?"pri":""}" href="${href}" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start">${txt}</a>`}
 function pendingBox(t,msg,link){return `<div class="pending"><b>${t}</b><span class="hint">${msg}</span>${link||""}</div>`}
-function activePl(){return fJug().filter(j=>!/Inactiv/i.test(j.estado)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
+function activePl(){return fJug().filter(j=>!/Inactiv|Retir/i.test(j.estado)).sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999)||a.nombre.localeCompare(b.nombre))}
 function loadsOf(jid){const out=[];
   S.sesiones.forEach(s=>{if((!jid||s.jid===jid)&&s.asis==="Presente"&&s.min!=null&&s.rpe!=null)out.push({f:s.fecha,c:s.min*s.rpe,jid:s.jid})});
   S.stats.forEach(s=>{const m=S.partidos.find(p=>p.id===s.pt);if((!jid||s.jid===jid)&&m&&m.fecha&&s.min>0&&s.rpe!=null)out.push({f:m.fecha,c:s.min*s.rpe,jid:s.jid})});return out}
@@ -1084,7 +1092,7 @@ function semaforo(j){const p=S.panel[j.id]||{};const acwr=numDec(p.acwr),bien=nu
   else if(bien!=null&&bien<bb){lvl=2;reasons.push("Bienestar bajo")}
   return {lvl:acwr==null&&bien==null&&!lb?-1:lvl,reasons,acwr,bien,lb}}
 function lastEval(jid){const a=S.evals.filter(e=>e.jid===jid);return a[a.length-1]||null}
-function teamEvalAvg(){const L=S.jug.filter(j=>!/Inactiv/i.test(j.estado)).map(j=>lastEval(j.id)).filter(Boolean);return AREAS.map(([k])=>{const v=L.map(e=>e[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})}
+function teamEvalAvg(){const L=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).map(j=>lastEval(j.id)).filter(Boolean);return AREAS.map(([k])=>{const v=L.map(e=>e[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null})}
 function testMeta(n){return S.testCat.find(t=>t.n===n)||{n,u:"",mejor:"Mayor"}}
 function tomaVals(jid,test){const o={};S.tests.filter(t=>t.jid===jid&&t.test===test).forEach(t=>{if(!o[t.toma]||(t.f||0)>=(o[t.toma].f||0))o[t.toma]=t});return o}
 function testsPresent(){return [...new Set(S.tests.map(t=>t.test))]}
@@ -1319,7 +1327,7 @@ async function loadDriveImages(force){
 let fotosT=null;
 window.__fotosNuevas=()=>{clearTimeout(fotosT);fotosT=setTimeout(()=>{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){window.__fotosNuevas();return}const c=document.getElementById("crest");if(c)c.innerHTML=ourCrest(38);render()},250)};
 function imgCard(){
-  const act=S.jug.filter(j=>!/Inactiv/i.test(j.estado));const sin=act.filter(j=>!FOTOS[j.id]);
+  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado));const sin=act.filter(j=>!FOTOS[j.id]);
   const riv=[...new Set(S.partidos.map(p=>p.rival))];const rs=riv.filter(r=>!escudoId(r));
   const acc=window.__acceso&&window.__acceso();
   return `<section class="sec"><div class="sec-h"><h3>Fotos y escudos</h3><span class="hint">${act.length-sin.length}/${act.length} fotos · ${riv.length-rs.length}/${riv.length} escudos</span></div>
@@ -1421,7 +1429,7 @@ function clubHero(){
 function clubInfo(){
   const ico={dt:'<path d="M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21c0-4 3.6-6 8-6s8 2 8 6"/>',pin:'<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',cup:'<path d="M7 4h10v5a5 5 0 0 1-10 0zM5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4M9 21h6M12 14v7"/>',std:'<path d="M3 20V9l9-5 9 5v11M3 20h18M8 20v-6h8v6"/>',team:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M14 15c3 0 8 1 8 5"/>'};
   const row=(i,k,v)=>`<div class="ci-row"><span class="ci-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ico[i]}</svg></span><div class="meta"><span class="ci-k">${k}</span><span class="ci-v">${v}</span></div></div>`;
-  const act=S.jug.filter(j=>!/Inactiv/i.test(j.estado)).length,yrs=CLUB.dtDesde?yearsSince(CLUB.dtDesde):null,dtf=CLUB.dtFoto&&window.foto(CLUB.dtFoto);
+  const act=S.jug.filter(j=>!/Inactiv|Retir/i.test(j.estado)).length,yrs=CLUB.dtDesde?yearsSince(CLUB.dtDesde):null,dtf=CLUB.dtFoto&&window.foto(CLUB.dtFoto);
   return `<section class="sec"><h3>Ficha del club</h3><div class="ci">
    <div class="ci-row"><span class="av" style="width:52px;height:52px;border-color:var(--accent)">${dtf?`<img src="${dtf}" alt="">`:esc(initials(CLUB.dt))}</span><div class="meta"><span class="ci-k">Entrenador</span><span class="ci-v">${esc(CLUB.dt)}</span>${CLUB.dtDesde?`<span class="hint">Entrenador desde ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][CLUB.dtDesde.getMonth()]} de ${CLUB.dtDesde.getFullYear()} · ${yrs} ${yrs===1?"año":"años"}</span>`:""}</div></div>
    ${CLUB.dtOrigen||CLUB.dtNac?row("cal","Nacimiento del entrenador",esc(CLUB.dtOrigen)+(CLUB.dtNac?` <span class="hint">· ${dLong(CLUB.dtNac)} · ${yearsSince(CLUB.dtNac)} años</span>`:"")):""}

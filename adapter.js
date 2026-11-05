@@ -130,6 +130,19 @@ async function pedirFotos() {
 addEventListener("online", () => { pedidas.clear(); });
 
 window.cerrarSesion = () => { ls.del("cfg"); ls.del("snap"); location.reload(); };
+// Quitar la foto de un jugador (en las dos apps): se saca del mapa config/fotos de Partido en vivo y se borra el archivo.
+window.quitarFoto = async jid => {
+  const r = await puente({ op: "cambios", desde: 0 }, 90000);
+  const d = (r.docs || []).find(x => x.ruta === "config/fotos" && !x.borrado);
+  const doc = (d && d.data) || { map: {} }, map = Object.assign({}, doc.map || {}), fid = map[jid];
+  if (!fid) return false;
+  delete map[jid];
+  const w = await puente({ op: "escribir", ops: [{ id: "q" + Date.now(), tipo: "set", ruta: "config/fotos", data: Object.assign({}, doc, { map }) }] }, 60000);
+  if (!(w.resultados || []).every(x => x.ok)) throw { code: "tool_error", message: "No se pudo actualizar el mapa de fotos" };
+  try { await puente({ op: "fotoBorrar", id: fid }, 60000); } catch (e) {}
+  IMG.fotos = map; ls.set("img", IMG); delete fotos[fid]; idbDel(fid);
+  return true;
+};
 window.puenteDT = (body, ms) => puente(body, ms || 60000);
 window.__acceso = () => cfg ? { desde: cfg.desde || "", url: cfg.url } : null;
 

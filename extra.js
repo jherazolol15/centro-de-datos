@@ -297,4 +297,57 @@ document.addEventListener("click", async ev => {
     A.busy = null; render();
   }
 });
+
+/* ---------- Modo día / noche ---------- */
+const TEMAS = ["auto", "light", "dark"];
+const ICON = { auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>', light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>' };
+const NOMBRE = { auto: "Automático (como el teléfono)", light: "Modo día", dark: "Modo noche" };
+function aplicarTema() {
+  const t = LS.get("theme", "auto"), el = document.documentElement;
+  if (t === "auto") el.removeAttribute("data-theme"); else el.setAttribute("data-theme", t);
+  const b = document.getElementById("thm"); if (b) { b.innerHTML = ICON[t]; b.title = NOMBRE[t]; }
+}
+document.addEventListener("click", ev => { if (!ev.target.closest("#thm")) return; const t = LS.get("theme", "auto"); const n = TEMAS[(TEMAS.indexOf(t) + 1) % 3]; LS.set("theme", n); aplicarTema(); toast(NOMBRE[n]); });
+aplicarTema();
+
+/* ---------- Seguimiento de lesión (formulario) ---------- */
+document.addEventListener("input", ev => { const t = ev.target; if (!S.act || S.act.t !== "segui") return; if (t.id === "sg-prev") S.act.prev = t.value; if (t.id === "sg-seg") S.act.seg = t.value; });
+document.addEventListener("change", ev => { const t = ev.target; if (!S.act || S.act.t !== "segui") return; if (t.id === "sg-indef") { S.act.indef = t.checked; render(); } if (t.id === "sg-seg") S.act.seg = t.value; });
+
+/* ---------- Gestión del jugador: quitar foto, retirado ---------- */
+window.gestionCard = function (j) {
+  const conFoto = !!FOTOS[j.id];
+  return `<section class="sec"><h3>Gestión del jugador</h3>
+   ${j.retirado ? '<div class="banner warn">Retirado del equipo. Su historial se conserva, pero no aparece en listas, convocatoria ni registros, y no tiene acceso a «Mi progreso».</div>' : ""}
+   <div class="row">${conFoto ? `<button class="btn sm" data-act="g-foto" data-id="${j.id}">Quitar foto</button>` : ""}
+   ${j.retirado ? `<button class="btn sm" data-act="g-ret" data-v="Activo" data-id="${j.id}">Reincorporar al equipo</button>` : `<button class="btn sm" data-act="g-ret" data-v="Retirado" data-id="${j.id}">Marcar como retirado</button>`}</div>
+   <p class="hint">${conFoto ? "Quitar foto la borra en las dos apps; el jugador vuelve a mostrar sus iniciales. Si la foto equivocada está en la carpeta FOTOS APP de Drive, cámbiala o bórrala allí para que no vuelva al importar. " : ""}Para una pausa temporal usa «Inactivo» en la columna Estado de Plantilla.</p></section>`;
+};
+window.retiradosCard = function () {
+  const r = S.jug.filter(j => j.retirado);
+  if (!r.length) return "";
+  return `<section class="sec"><details><summary style="cursor:pointer;font-weight:700">Retirados (${r.length})</summary><div class="list" style="margin-top:10px">${r.map(j => `<a class="li" href="#jugador-${j.id}" style="text-decoration:none">${avatar(j, "sm")}<div class="meta"><span class="nm">${esc(j.nombre)}</span><span class="sub">${esc(j.pos1 || "")}</span></div><span class="chip ina">Retirado</span></a>`).join("")}</div></details></section>`;
+};
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest('[data-act="g-foto"],[data-act="g-ret"]'); if (!t || S.busy) return;
+  const j = jById(t.dataset.id); if (!j) return;
+  if (!navigator.onLine) { toast("Se necesita señal para hacer este cambio."); return; }
+  if (t.dataset.act === "g-foto") {
+    if (!confirm(`¿Quitar la foto de ${shortName(j.nombre)}? Se borra en el Centro y en Partido en vivo.`)) return;
+    S.busy = true; render();
+    try { await window.quitarFoto(j.id); aplicarImagenes(window.imagenesGuardadas()); toast("Foto quitada."); }
+    catch (e) { toast("No se pudo quitar la foto: " + ((e && e.message) || "sin señal")); }
+    S.busy = false; render(); return;
+  }
+  const v = t.dataset.v, ret = v === "Retirado";
+  if (!confirm(ret ? `¿Marcar a ${j.nombre} como retirado del equipo? Se conserva su historial y se quita su acceso a «Mi progreso».` : `¿Reincorporar a ${j.nombre} al equipo?`)) return;
+  S.busy = true; render();
+  try {
+    await window.puenteDT({ op: "set", range: `Plantilla!P${j.row}`, values: [[v]] });
+    if (ret) { try { await window.puenteDT({ op: "jugQuitar", id: j.id }); } catch (e) {} }
+    toast(ret ? "Jugador marcado como retirado." : "Jugador reincorporado.");
+    S.busy = false; await loadAll();
+  } catch (e) { toast("No se pudo guardar: " + gsErrorText(e)); }
+  S.busy = false; render();
+});
 })();
