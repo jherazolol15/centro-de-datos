@@ -10,28 +10,28 @@ const css = `
 .msgbox{white-space:pre-wrap;background:var(--surface-2);border-radius:10px;padding:10px;font-size:.88rem;overflow-wrap:anywhere}
 /* Informe A4 (se dibuja fuera de la vista y se convierte en PDF) */
 .rp-host{position:fixed;left:0;top:0;z-index:-5;pointer-events:none}
-.rp-page{width:794px;height:1123px;background:#fff;color:#0E2A40;padding:30px 40px 22px;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Public Sans","Barlow","Segoe UI",Arial,sans-serif;font-size:13px;line-height:1.35;margin-bottom:10px}
+.rp-page{width:794px;height:1123px;background:#fff;color:#0E2A40;padding:30px 40px 22px;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Barlow","Segoe UI",Arial,sans-serif;font-size:13px;line-height:1.35;margin-bottom:10px}
 .rp-head{display:flex;align-items:center;gap:12px;background:#0B4F7C;color:#fff;border-radius:10px;padding:10px 14px;flex:none}
 .rp-head img{width:46px;height:46px;object-fit:contain}
 .rp-head .t{flex:1;display:flex;flex-direction:column}
-.rp-head b{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:21px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.rp-head b{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:21px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .rp-head span{font-size:12px;opacity:.9}
 .rp-head .r{text-align:right;font-size:12px}
 .rp-head .r b{font-size:16px}
 .rp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding-top:12px}
 .rp-foot{flex:none;display:flex;justify-content:space-between;font-size:10.5px;color:#46607A;border-top:1px solid #C9E4F4;padding-top:6px}
-.rp-blk h4{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#0B4F7C;border-bottom:2px solid #0B4F7C;padding-bottom:3px}
+.rp-blk h4{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#0B4F7C;border-bottom:2px solid #0B4F7C;padding-bottom:3px}
 .rp-hero{display:flex;gap:16px;align-items:center}
-.rp-ph{width:104px;height:104px;border-radius:50%;overflow:hidden;border:4px solid #0B4F7C;display:grid;place-items:center;background:#d6eef8;font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:34px;flex:none}
+.rp-ph{width:104px;height:104px;border-radius:50%;overflow:hidden;border:4px solid #0B4F7C;display:grid;place-items:center;background:#d6eef8;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:34px;flex:none}
 .rp-ph img{width:100%;height:100%;object-fit:cover}
-.rp-hero .n{font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;line-height:1}
+.rp-hero .n{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;line-height:1}
 .rp-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .rp-fact{background:#EAF4FB;border-radius:8px;padding:5px 8px}
 .rp-fact span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#46607A;font-weight:700}
 .rp-fact b{font-size:13px}
 .rp-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .rp-kpi{background:#EAF4FB;border-radius:8px;padding:6px 8px;text-align:center}
-.rp-kpi b{display:block;font-family:"Oswald","Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:24px;line-height:1}
+.rp-kpi b{display:block;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:24px;line-height:1}
 .rp-kpi span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#46607A;font-weight:700}
 .rp-t{width:100%;border-collapse:collapse;font-size:12px}
 .rp-t th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#46607A;text-align:left;padding:4px 5px;border-bottom:1px solid #C9E4F4}
