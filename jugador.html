@@ -118,6 +118,18 @@ select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:va
 .post.mvp .ic,.post.debut .ic,.post.cumple .ic,.post.hattrick .ic,.post.promocion .ic{background:rgba(255,255,255,.8)}
 .post img.pf{width:100%;max-height:420px;object-fit:cover;border-radius:12px}
 .post .txtp{margin:0;white-space:pre-line;font-size:1rem}
+.avw{position:relative;display:inline-block;flex:none}
+.avw .emo{position:absolute;right:-6px;bottom:-4px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:1.05rem;background:var(--surface);border:2px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,.18);line-height:1}
+.ic .emo,.avw.sm .emo{width:22px;height:22px;font-size:.75rem;right:-6px;bottom:-6px}
+.post .top2 .avw{width:44px;height:44px}
+.tg{display:flex;flex-wrap:wrap;gap:6px}
+.tg span,.tg button{border-radius:999px;padding:4px 10px;font-size:.82rem;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--ink)}
+.txt .tg span{display:inline-block;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;font-size:.82rem}
+.tg button{cursor:pointer;min-height:34px}.tg button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tg button:disabled{opacity:.4}
+.emogrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.emogrid button{font-size:1.35rem;min-height:42px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;padding:0}
+.emogrid button.on{border:2px solid var(--accent);background:var(--sky-soft)}
 .prevw{max-width:100%;max-height:240px;border-radius:12px;object-fit:cover}
 </style>
 </head><body>
@@ -269,15 +281,18 @@ async function cargarFotos(){
   for(let i=0;i<ids.length;i+=20){try{const r=await llamar(ses,{op:"jugFotos",ids:ids.slice(i,i+20)});Object.assign(S.fx,r.fotos||{});if(S.ses)try{LS.set("fx",S.fx)}catch(x){}render()}catch(x){return}}
 }
 function fotoDe(id){return id&&S.fx[id]||null}
-function avP(j,cls){const f=fotoDe(j.foto);return `<span class="av ${cls||""}">${f?`<img src="${f}" alt="">`:esc(ini(j.nombre))}</span>`}
+function avP(j,cls){const f=fotoDe(j.foto);return `<span class="avw ${cls||""}"><span class="av">${f?`<img src="${f}" alt="">`:esc(ini(j.nombre))}</span>${j.emo?`<span class="emo" aria-label="Emoji de hoy">${j.emo}</span>`:""}</span>`}
+const GICO={musica:"🎵",hobbies:"🎮",equipo:"⚽",materia:"📚"};
+function gustosHtml(tags){const G=(S.eq&&S.eq.gustos)||[];const b=G.filter(g=>(tags&&tags[g.k]||[]).length);if(!b.length)return "";
+  return b.map(g=>`<div class="txt"><span>${GICO[g.k]||""} ${esc(g.t)}</span><div class="tg" style="margin-top:4px">${tags[g.k].map(x=>`<span>${esc(x)}</span>`).join("")}</div></div>`).join("")}
 function statsTxt(j){const s=j.stats||{};return j.gk?[[s.pj,"Partidos"],[s.vallas,"Vallas invictas"],[s.pa,"Penales atajados"],[s.mvp,"MVP"]]:[[s.pj,"Partidos"],[s.goles,"Goles"],[s.asist,"Asistencias"],[s.mvp,"MVP"]]}
 function vEquipo(){
   const e=S.eq;
   if(!e)return `<section class="sec"><h2>Equipo</h2><p class="empty">${esc(S.eqErr||(navigator.onLine?"Cargando el equipo…":"Sin señal: el equipo aparece cuando tengas conexión."))}</p></section>`;
   const dt=e.dt||{},fd=fotoDe(dt.foto);
-  let h=`<section class="sec"><h3>Entrenador</h3><div class="hero" style="align-items:flex-start"><span class="av">${fd?`<img src="${fd}" alt="">`:esc(ini(dt.nombre))}</span><div style="display:flex;flex-direction:column;gap:4px"><h2 style="font-size:1.35rem">${esc(dt.nombre)}</h2>${dt.cargo?`<p class="hint">${esc(dt.cargo)}</p>`:""}
+  let h=`<section class="sec"><h3>Entrenador</h3><div class="hero" style="align-items:flex-start"><span class="avw"><span class="av">${fd?`<img src="${fd}" alt="">`:esc(ini(dt.nombre))}</span>${dt.emo?`<span class="emo">${dt.emo}</span>`:""}</span><div style="display:flex;flex-direction:column;gap:4px"><h2 style="font-size:1.35rem">${esc(dt.nombre)}</h2>${dt.cargo?`<p class="hint">${esc(dt.cargo)}</p>`:""}
    ${dt.nacimiento?`<p class="hint">Nació el ${esc(dt.nacimiento)}</p>`:""}${dt.desde?`<p class="hint">Entrenador desde ${esc(String(dt.desde).toLowerCase())}</p>`:""}</div></div>
-   ${(dt.formacion||[]).length?`<div class="txt"><span>Formación</span>${dt.formacion.map(esc).join("<br>")}</div>`:""}</section>`;
+   ${(dt.formacion||[]).length?`<div class="txt"><span>Formación</span>${dt.formacion.map(esc).join("<br>")}</div>`:""}${gustosHtml(dt.tags)}</section>`;
   const js=e.jugadores.slice().sort((a,b)=>(Number(a.dorsal)||999)-(Number(b.dorsal)||999));
   h+=`<section class="sec"><div class="sec-h"><h3>Compañeros</h3><span class="hint">${js.length}</span></div><div class="grid2">${js.map(j=>`<button class="pc" data-a="ver" data-id="${j.id}">${avP(j)}<b>${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.nombre)}</b>${j.apodo?`<span class="apodo">${esc(j.apodo)}</span>`:""}<small>${esc(j.pos1||"")}</small></button>`).join("")}</div></section>`;
   return h;
@@ -289,7 +304,7 @@ function ventanaPerfil(){
   if(!el){el=document.createElement("div");el.id="pf-ovl";el.className="ovl";document.body.appendChild(el)}
   el.innerHTML=`<div class="box" role="dialog" aria-label="Perfil"><div class="sec-h"><span></span><button class="btn sm" data-a="cerrar">Cerrar</button></div>
    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">${avP(j)}<h2>${esc(j.nombre)}</h2>${j.apodo?`<span class="apodo" style="font-size:.9rem">${esc(j.apodo)}</span>`:""}<p class="hint">${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.pos1||"")}${j.pos2?" · "+esc(j.pos2):""}</p></div>
-   ${j.desc?`<p style="margin:0;text-align:center;font-size:1.02rem">“${esc(j.desc)}”</p>`:""}
+   ${j.desc?`<p style="margin:0;text-align:center;font-size:1.02rem">“${esc(j.desc)}”</p>`:""}${gustosHtml(j.tags)}
    <div class="kpis">${statsTxt(j).map(([v,l])=>`<div class="kpi"><b>${v||0}</b><span>${l}</span></div>`).join("")}</div><p class="hint" style="text-align:center">Temporada</p></div>`;
 }
 function vMuro(){
@@ -298,9 +313,9 @@ function vMuro(){
   const porId={};e.jugadores.forEach(j=>porId[j.id]=j);
   let h=`<h2>Muro del equipo</h2>`+vCompositor();
   if(!e.muro.length)return h+`<section class="sec"><p class="empty">Aún no hay publicaciones. Aquí aparecerán los logros del equipo.</p></section>`;
-  return h+e.muro.map(p=>{const j=porId[p.jug[0]],c=e.reac[p.id]||{},mia=e.mias[p.id];const f=j&&fotoDe(j.foto),esp=BADGE[p.tipo];
-    const cab=p.tipo==="post"?`<div class="top2"><span class="ic">${f?`<img src="${f}" alt="">`:"💬"}</span><div style="flex:1;min-width:0"><b>${esc(p.autor||"")}</b><p class="hint">${esc(dL(pD(p.fecha)))}</p></div></div>${p.texto?`<p class="txtp">${esc(p.texto)}</p>`:""}${p.foto?(fotoDe(p.foto)?`<img class="pf" src="${fotoDe(p.foto)}" alt="Foto de la publicación">`:'<p class="hint">Cargando foto…</p>'):""}`
-      :`${esp?`<span class="badge">${esp}</span>`:""}<div class="top2"><span class="ic">${f?`<img src="${f}" alt="">`:ICO[p.tipo]||"⭐"}</span><div style="flex:1;min-width:0"><b class="${esp?"big":""}">${!esp&&f?ICO[p.tipo]+" ":""}${esc(p.texto)}</b><p class="hint">${p.tipo==="anuncio"?"Anuncio del entrenador · ":""}${esc(dL(pD(p.fecha)))}</p></div></div>`;
+  return h+e.muro.map(p=>{const j=porId[p.jug[0]],c=e.reac[p.id]||{},mia=e.mias[p.id];const f=j&&fotoDe(j.foto),esp=BADGE[p.tipo],eb=j&&j.emo?`<span class="emo">${j.emo}</span>`:"";
+    const cab=p.tipo==="post"?`<div class="top2"><span class="avw sm"><span class="ic">${f?`<img src="${f}" alt="">`:"💬"}</span>${eb}</span><div style="flex:1;min-width:0"><b>${esc(p.autor||"")}</b><p class="hint">${esc(dL(pD(p.fecha)))}</p></div></div>${p.texto?`<p class="txtp">${esc(p.texto)}</p>`:""}${p.foto?(fotoDe(p.foto)?`<img class="pf" src="${fotoDe(p.foto)}" alt="Foto de la publicación">`:'<p class="hint">Cargando foto…</p>'):""}`
+      :`${esp?`<span class="badge">${esp}</span>`:""}<div class="top2"><span class="avw sm"><span class="ic">${f?`<img src="${f}" alt="">`:ICO[p.tipo]||"⭐"}</span>${f?eb:""}</span><div style="flex:1;min-width:0"><b class="${esp?"big":""}">${!esp&&f?ICO[p.tipo]+" ":""}${esc(p.texto)}</b><p class="hint">${p.tipo==="anuncio"?"Anuncio del entrenador · ":""}${esc(dL(pD(p.fecha)))}</p></div></div>`;
     return `<article class="post ${esc(p.tipo)}">${cab}<div class="rx">${RX.map(([k,i])=>`<button data-a="rx" data-ev="${esc(p.id)}" data-t="${k}" class="${mia===k?"on":""}" aria-label="${k}">${i}${c[k]?`<b>${c[k]}</b>`:""}</button>`).join("")}</div></article>`}).join("");
 }
 async function reaccionar(ev,t){
@@ -334,6 +349,22 @@ async function enviarPub(){
 }
 document.addEventListener("input",ev=>{if(ev.target.id==="pub-txt"&&S.pub){S.pub.texto=ev.target.value;const c=document.getElementById("pub-cnt");if(c)c.textContent=ev.target.value.length+"/500"}});
 document.addEventListener("change",async ev=>{if(ev.target.id!=="pub-foto"||!S.pub)return;const f=ev.target.files&&ev.target.files[0];if(!f)return;try{S.pub.foto=await comprimir(f);render()}catch(x){alert(ERRP.foto_invalida)}});
+function vGustos(){
+  const e=S.eq,y=e&&e.yo;if(!y||!e.emojis)return "";
+  const gu=S.gu||(S.gu=JSON.parse(JSON.stringify(y.tags||{})));
+  return `<section class="sec"><div class="sec-h"><h3>Mi emoji de hoy</h3>${y.emo?`<span style="font-size:1.6rem">${y.emo}</span>`:""}</div><p class="hint">Se ve junto a tu foto durante 24 horas. Cámbialo cuando quieras.</p>
+    <div class="emogrid">${e.emojis.map(x=>`<button data-a="emo" data-v="${x}" class="${y.emo===x?"on":""}" ${S.guBusy?"disabled":""}>${x}</button>`).join("")}</div>${y.emo?`<button class="btn sm" data-a="emo" data-v="" style="align-self:flex-start">Quitar emoji</button>`:""}</section>
+   <section class="sec"><h3>Mis gustos</h3><p class="hint">Elige lo que más te gusta. Tus compañeros lo ven en tu perfil.</p>
+    ${(e.gustos||[]).map(g=>{const sel=gu[g.k]||[];return `<div class="txt"><span>${GICO[g.k]||""} ${esc(g.t)} · ${sel.length}/${g.max}</span><div class="tg" style="margin-top:6px">${g.l.map(x=>{const on=sel.includes(x);return `<button data-a="tag" data-k="${g.k}" data-v="${esc(x)}" class="${on?"on":""}" ${!on&&sel.length>=g.max&&g.max>1?"disabled":""}>${esc(x)}</button>`}).join("")}</div></div>`}).join("")}
+    <button class="btn pri" data-a="gustos-guardar" ${S.guBusy?"disabled":""}>${S.guBusy?"Guardando…":"Guardar mis gustos"}</button></section>`;
+}
+async function guardarGustos(body,ok){
+  const ses=ses0();if(!ses)return;if(!navigator.onLine){alert(ERRC.red);return}
+  S.guBusy=true;render();
+  try{const r=await llamar(ses,Object.assign({op:"jugGustos"},body));const y=S.eq.yo;y.emo=r.emo;y.tags=r.tags;S.gu=JSON.parse(JSON.stringify(r.tags||{}));const me=S.eq.jugadores.find(j=>j.id===y.id);if(me){me.emo=r.emo;me.tags=r.tags}if(S.ses)LS.set("equipo",S.eq);if(ok)alert(ok)}
+  catch(x){alert(x.code==="limite"?ERRC.limite:x.code==="emoji_invalido"?"Ese emoji no está disponible.":ERRC.red)}
+  S.guBusy=false;render();
+}
 function vMiPerfil(){
   const e=S.eq;if(!e||!e.yo)return "";
   const y=e.yo,pf=S.pf||(S.pf={apodo:(y.prop&&y.prop.apodo)||y.apodo||"",desc:(y.prop&&y.prop.desc)||y.desc||""});
@@ -343,7 +374,7 @@ function vMiPerfil(){
    ${!y.visible?'<div class="banner warn">Por ahora tu perfil no se muestra al equipo.</div>':""}
    <label class="f">Apodo<select id="pf-apodo" class="sel"><option value="">Sin apodo</option>${(e.apodos||[]).map(a=>`<option ${a===pf.apodo?"selected":""}>${esc(a)}</option>`).join("")}</select></label>
    <label class="f">Algo sobre mí <span id="pf-cnt" style="text-transform:none;letter-spacing:0;font-weight:500">(${pf.desc.length}/280)</span><textarea id="pf-desc" class="ta" maxlength="280" placeholder="Ej.: Me gusta jugar por la banda y mi ídolo es…">${esc(pf.desc)}</textarea></label>
-   <button class="btn pri" data-a="pf-enviar" ${S.pfBusy?"disabled":""}>${S.pfBusy?"Enviando…":"Enviar para aprobación"}</button></section>`;
+   <button class="btn pri" data-a="pf-enviar" ${S.pfBusy?"disabled":""}>${S.pfBusy?"Enviando…":"Enviar para aprobación"}</button></section>${vGustos()}`;
 }
 async function enviarPerfil(){
   const ses=ses0(),pf=S.pf;if(!ses||!pf)return;
@@ -361,6 +392,9 @@ function clicComunidad(t){
   if(a==="cerrar"){S.ver=null;ventanaPerfil();return true}
   if(a==="rx"){reaccionar(t.dataset.ev,t.dataset.t);return true}
   if(a==="pf-enviar"){enviarPerfil();return true}
+  if(a==="emo"){guardarGustos({emo:t.dataset.v||null});return true}
+  if(a==="tag"){const g=(S.eq.gustos||[]).find(x=>x.k===t.dataset.k),v=t.dataset.v,arr=S.gu[g.k]=S.gu[g.k]||[];const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else if(g.max===1)arr.splice(0,1,v);else if(arr.length<g.max)arr.push(v);render();return true}
+  if(a==="gustos-guardar"){guardarGustos({tags:S.gu},"¡Listo! Tus gustos ya se ven en tu perfil.");return true}
   if(a==="pub-abrir"){S.pub={texto:"",foto:null};render();return true}
   if(a==="pub-cancelar"){S.pub=null;render();return true}
   if(a==="pub-sinfoto"){S.pub.foto=null;render();return true}

@@ -376,6 +376,16 @@ async function comEscribir(ops, ok) {
     toast(ok); CM.busy = null; CM.t = 0; await comCargar(true);
   } catch (e) { CM.busy = null; toast("No se pudo guardar: " + ((e && e.message) || "sin señal")); render(); }
 }
+/* Cambia solo los campos indicados del documento (si no existe, lo crea): no borra emoji, gustos ni ascenso. */
+async function comUpsert(ruta, data, ok) {
+  if (CM.busy) return; CM.busy = "w"; render();
+  try {
+    let w = await window.puenteDT({ op: "escribir", ops: [{ id: "u" + Date.now(), tipo: "update", ruta, data }] });
+    if (!(w.resultados || []).every(x => x.ok)) w = await window.puenteDT({ op: "escribir", ops: [{ id: "s" + Date.now(), tipo: "set", ruta, data }] });
+    if (!(w.resultados || []).every(x => x.ok)) throw { message: "La base no aceptó el cambio" };
+    toast(ok); CM.busy = null; CM.t = 0; await comCargar(true);
+  } catch (e) { CM.busy = null; toast("No se pudo guardar: " + ((e && e.message) || "sin señal")); render(); }
+}
 window.vComunidad = function () {
   setTimeout(() => comCargar(false), 0);
   const d = CM.d;
@@ -391,6 +401,15 @@ window.vComunidad = function () {
     return `<div class="ccard"><div class="att-top">${avatar(j, "sm")}<div class="meta" style="flex:1;min-width:0"><span class="nm" style="font-weight:700">${esc(x.nombre)}</span><span class="sub">${esc(dLong(new Date(x.ts)))}</span></div></div>
       ${x.texto ? `<p style="margin:0;white-space:pre-line">${esc(x.texto)}</p>` : ""}${x.foto ? (f ? `<img src="${f}" alt="Foto de la publicación" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px">` : '<p class="hint">Cargando foto…</p>') : ""}
       <div class="fgrid"><button class="btn sm" data-act="cm-prech" data-id="${esc(x.id)}" ${CM.busy ? "disabled" : ""}>Rechazar</button><button class="btn pri sm" data-act="cm-pok" data-id="${esc(x.id)}" ${CM.busy ? "disabled" : ""}>Aprobar y publicar</button></div></div>`; }).join("")}</div>` : '<p class="empty">No hay publicaciones por aprobar.</p>'}</section>`;
+  if (d.emojis) {
+    const G = d.gustos || [], dt = d.dt || {}, gu = CM.gu || (CM.gu = JSON.parse(JSON.stringify(dt.tags || {})));
+    h += `<section class="sec"><div class="sec-h"><h3>Mi perfil de entrenador</h3>${dt.emo ? `<span style="font-size:1.6rem">${dt.emo}</span>` : ""}</div>
+      <p class="hint">Tu emoji del día (24 horas) y tus gustos se ven en tu tarjeta de «Equipo». Los demás datos salen de Config (filas «Perfil DT · …»).</p>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px">${d.emojis.map(x => `<button class="btn sm" style="font-size:1.25rem;padding:0;min-height:40px;${dt.emo === x ? "border:2px solid var(--accent);background:var(--sky-soft)" : ""}" data-act="cm-emo" data-v="${x}" ${CM.busy ? "disabled" : ""}>${x}</button>`).join("")}</div>
+      ${dt.emo ? `<button class="btn sm" data-act="cm-emo" data-v="" style="align-self:flex-start" ${CM.busy ? "disabled" : ""}>Quitar emoji</button>` : ""}
+      ${G.map(g => { const sel = gu[g.k] || []; return `<div><span class="hint" style="font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.74rem">${esc(g.t)} · ${sel.length}/${g.max}</span><div class="row" style="gap:6px;margin-top:6px">${g.l.map(x => { const on = sel.includes(x); return `<button class="fchip" aria-pressed="${on}" data-act="cm-tag" data-k="${g.k}" data-v="${esc(x)}" ${!on && sel.length >= g.max && g.max > 1 ? "disabled" : ""}>${esc(x)}</button>`; }).join("")}</div></div>`; }).join("")}
+      <button class="btn pri" data-act="cm-gustos" ${CM.busy ? "disabled" : ""}>Guardar mis gustos</button></section>`;
+  }
   h += `<section class="sec"><h3>Anuncio en el muro</h3><label class="f">Texto<textarea id="cm-anuncio" rows="2" maxlength="280" placeholder="Ej.: Mañana entreno a las 3 p. m. en la sede.">${esc(CM.borrador || "")}</textarea></label>
     <button class="btn pri" data-act="cm-pub" ${CM.busy ? "disabled" : ""}>Publicar anuncio</button>
     ${d.anuncios.length ? `<div class="list">${d.anuncios.sort((a, b) => b.ts - a.ts).map(a => `<div class="li"><div class="meta"><span class="nm">📣 ${esc(a.texto)}</span><span class="sub">${esc(dLong(new Date(a.ts)))}</span></div><button class="btn sm" data-act="cm-borrar" data-id="${esc(a.id)}" ${CM.busy ? "disabled" : ""}>Borrar</button></div>`).join("")}</div>` : ""}</section>`;
@@ -401,7 +420,8 @@ window.vComunidad = function () {
         ${p.quien.length ? `<button class="linkbtn" data-act="cm-ver" data-id="${esc(p.id)}">${Object.keys(c).map(k => RXI[k] + " " + c[k]).join("  ")} · ${open ? "ocultar nombres" : "ver quién"}</button>${open ? `<p class="hint" style="margin:0">${p.quien.map(q => esc(q.nombre) + " " + (RXI[q.tipo] || "")).join(" · ")}</p>` : ""}` : '<span class="hint">Sin reacciones</span>'}</div>`; }).join("")}</div>` : '<p class="empty">Aún no hay publicaciones.</p>'}</section>`;
   h += `<section class="sec"><h3>Perfiles y visibilidad</h3><p class="hint">Si una familia prefiere que su hijo no aparezca en Equipo ni en el Muro, apaga «Visible». Él sigue viendo su propio progreso.</p>
     <div class="list">${d.perfiles.map(p => { const j = jById(p.id) || { id: p.id, nombre: p.nombre };
-      return `<div class="li">${avatar(j, "sm")}<div class="meta"><span class="nm">${esc(p.nombre)}${p.apodo ? ` <span class="chip b">${esc(p.apodo)}</span>` : ""}</span><span class="sub">${p.desc ? esc(p.desc) : "Sin descripción aprobada"}</span></div>
+      const nt = Object.values(p.tags || {}).reduce((a, x) => a + (x || []).length, 0);
+      return `<div class="li">${avatar(j, "sm")}<div class="meta"><span class="nm">${p.emo ? p.emo + " " : ""}${esc(p.nombre)}${p.apodo ? ` <span class="chip b">${esc(p.apodo)}</span>` : ""}</span><span class="sub">${p.desc ? esc(p.desc) : "Sin descripción aprobada"}${nt ? ` · ${nt} gustos` : ""}</span>${p.emo ? `<button class="linkbtn" data-act="cm-quitaremo" data-id="${p.id}">Quitar su emoji</button>` : ""}</div>
         <label class="row" style="gap:6px;font-size:.85rem;font-weight:700;flex:none"><input type="checkbox" data-act="cm-vis" data-id="${p.id}" ${p.visible ? "checked" : ""} ${CM.busy ? "disabled" : ""} style="width:22px;height:22px">Visible</label></div>`; }).join("")}</div></section>`;
   return h;
 };
@@ -412,15 +432,19 @@ document.addEventListener("click", ev => {
   const full = p => ({ apodo: p.apodo || "", desc: p.desc || "", prop: p.prop || null, rech: p.rech || null, visible: p.visible !== false });
   if (a === "cm-reload") { comCargar(true); return; }
   if (a === "cm-ver") { CM.ver[id] = !CM.ver[id]; render(); return; }
+  if (a === "cm-tag") { const g = (CM.d.gustos || []).find(x => x.k === t.dataset.k), v = t.dataset.v, arr = CM.gu[g.k] = CM.gu[g.k] || []; const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else if (g.max === 1) arr.splice(0, 1, v); else if (arr.length < g.max) arr.push(v); render(); return; }
   if (!navigator.onLine) { toast("Se necesita señal para este cambio."); ev.preventDefault(); return; }
-  if (a === "cm-ok" && P) comEscribir([{ tipo: "set", ruta: "comunidad/" + id, data: Object.assign(full(P), { apodo: P.prop.apodo || "", desc: P.prop.desc || "", prop: null, rech: null }) }], "Perfil aprobado.");
-  else if (a === "cm-rech" && P) { const m = prompt("Motivo para el jugador (opcional):", ""); if (m === null) return; comEscribir([{ tipo: "set", ruta: "comunidad/" + id, data: Object.assign(full(P), { prop: null, rech: { motivo: m.trim().slice(0, 200), ts: Date.now() } }) }], "Propuesta rechazada."); }
-  else if (a === "cm-vis" && P) comEscribir([{ tipo: "set", ruta: "comunidad/" + id, data: Object.assign(full(P), { visible: t.checked }) }], t.checked ? "Visible para el equipo." : "Oculto para el equipo.");
+  if (a === "cm-ok" && P) comUpsert("comunidad/" + id, { apodo: P.prop.apodo || "", desc: P.prop.desc || "", prop: null, rech: null }, "Perfil aprobado.");
+  else if (a === "cm-rech" && P) { const m = prompt("Motivo para el jugador (opcional):", ""); if (m === null) return; comUpsert("comunidad/" + id, { prop: null, rech: { motivo: m.trim().slice(0, 200), ts: Date.now() } }, "Propuesta rechazada."); }
+  else if (a === "cm-vis" && P) comUpsert("comunidad/" + id, { visible: t.checked }, t.checked ? "Visible para el equipo." : "Oculto para el equipo.");
   else if (a === "cm-oc") { const ids = {}; CM.d.muro.forEach(p => { if (p.oculto) ids[p.id] = true; }); if (t.dataset.v === "1") ids[id] = true; else delete ids[id]; comEscribir([{ tipo: "set", ruta: "comunidad/ocultos", data: { ids } }], t.dataset.v === "1" ? "Publicación oculta." : "Publicación visible."); }
   else if (a === "cm-pub") { const x = String(CM.borrador || "").trim(); if (!x) { toast("Escribe el anuncio."); return; } comEscribir([{ tipo: "set", ruta: "anuncios/a" + Date.now().toString(36), data: { texto: x.slice(0, 280), ts: Date.now() } }], "Anuncio publicado."); CM.borrador = ""; }
   else if (a === "cm-pok") comEscribir([{ tipo: "update", ruta: "posts/" + id, data: { estado: "aprobado", tsAprob: Date.now(), motivo: "" } }], "Publicación aprobada.");
   else if (a === "cm-prech") { const m = prompt("Motivo para el jugador (opcional):", ""); if (m === null) return; comEscribir([{ tipo: "update", ruta: "posts/" + id, data: { estado: "rechazado", motivo: m.trim().slice(0, 200) } }], "Publicación rechazada."); }
   else if (a === "cm-pdel") { if (!confirm("¿Borrar esta publicación del muro? No se puede deshacer.")) return; const x = (CM.d.posts || []).find(q => q.id === id); comEscribir([{ tipo: "delete", ruta: "posts/" + id }], "Publicación borrada.").then(() => { if (x && x.foto) window.puenteDT({ op: "fotoBorrar", id: x.foto }).catch(() => {}); }); }
+  else if (a === "cm-emo") { const dt = CM.d.dt || {}; comEscribir([{ tipo: "set", ruta: "comunidad/DT", data: { emo: t.dataset.v ? { e: t.dataset.v, ts: Date.now() } : null, tags: dt.tags || {} } }], t.dataset.v ? "Emoji del día publicado." : "Emoji quitado."); }
+  else if (a === "cm-gustos") { const dt = CM.d.dt || {}; comEscribir([{ tipo: "set", ruta: "comunidad/DT", data: { emo: dt.emoRaw || null, tags: CM.gu || {} } }], "Gustos guardados."); CM.gu = null; }
+  else if (a === "cm-quitaremo" && P) comUpsert("comunidad/" + id, { emo: null }, "Emoji quitado.");
   else if (a === "cm-borrar") { if (!confirm("¿Borrar este anuncio del muro?")) return; comEscribir([{ tipo: "delete", ruta: "anuncios/" + id }], "Anuncio borrado."); }
 });
 })();
