@@ -390,7 +390,7 @@ async function readRetry(range){try{return await readRange(range)}catch(e){if(e&
 const RANGES={
   pA:"Plantilla!A2:E41",pB:"Plantilla!H2:Q41",pC:"Plantilla!W2:X41",
   partidos:"Partidos!A2:M200",stats:"Stats_Partido!A2:U2000",eventos:"Eventos!A2:K4000",inf:"Informe_Partido!A2:AJ300",
-  les:"Lesiones!A2:L300",san:"Sanciones!A2:J300",ses:"Sesiones!A2:K3000",panel:"Panel!A11:X50",config:"Config!A1:B60",listas:"Listas!C2:Q14",tests:"Tests_Fisicos!A2:I800",eval:"Eval_Formativa!A2:Q500",bien:"Bienestar!A2:U1000",conv:"Convocatoria!A2:R44",prof:"Profundidad!A5:J16"
+  les:"Lesiones!A2:L300",san:"Sanciones!A2:J300",ses:"Sesiones!A2:K3000",panel:"Panel!A11:X50",config:"Config!A1:B60",listas:"Listas!C2:Q14",tests:"Tests_Fisicos!A2:I800",eval:"Eval_Formativa!A2:Q500",bien:"Bienestar!A2:U1000",conv:"Convocatoria!A2:R44",prof:"Profundidad!A5:J16",cal:"Calendario!A2:J100"
 };
 async function loadAll(){
   if(S.loading)return;S.loading=true;setRefreshSpin(true);
@@ -421,7 +421,7 @@ function parseAll(r){
   S.fixtures=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]&&(x[6]===""||x[6]==null)).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||""})).filter(p=>p.fecha&&p.fecha>=today0()).sort((a,b)=>a.fecha-b.fecha);
   S.partidos=(r.partidos||[]).filter(x=>x&&x[0]&&x[3]).map(x=>({id:x[0],fecha:pDate(x[1]),comp:x[2]||"",rival:x[3],loc:x[4]||"",micro:x[5]||"",gf:num(x[6]),gc:num(x[7]),res:x[8]||"",pts:num(x[9]),label:x[10]||"",obs:x[11]||"",dur:num(x[12])||80}))
     .filter(p=>p.gf!=null&&p.gc!=null).sort((a,b)=>(a.fecha||0)-(b.fecha||0)||a.id.localeCompare(b.id));
-  S.partidos.forEach(p=>{if(!p.res)p.res=p.gf>p.gc?"G":p.gf<p.gc?"P":"E";if(p.pts==null)p.pts=p.res==="G"?3:p.res==="E"?1:0});
+  S.partidos.forEach(p=>{if(!p.res)p.res=p.gf>p.gc?"G":p.gf<p.gc?"P":"E";if(p.pts==null)p.pts=p.res==="G"?3:p.res==="E"?1:0});if(window.calFusionar)window.calFusionar(r);
   S.stats=(r.stats||[]).filter(x=>x&&x[1]&&x[5]).map(x=>({pt:x[1],comp:x[3]||"",jid:x[5],cond:x[6]||"",ent:num(x[7]),sal:num(x[8]),min:num(x[9])||0,g:num(x[10])||0,a:num(x[11])||0,am:num(x[12])||0,ro:num(x[13])||0,mvp:/^(s[ií]|1|x|true|mvp)$/i.test(String(x[14]||"").trim()),nota:numDec(x[15]),rpe:numDec(x[16]),gr:num(x[18]),pa:num(x[19]),obs:x[20]||""}));
   S.eventos=(r.eventos||[]).filter(x=>x&&x[1]).map(x=>({id:x[0],pt:x[1],per:x[2]||"",min:num(x[3]),tipo:x[4]||"",jug:x[5]||"",jid:x[6]||"",rel:x[7]||"",det:x[8]||"",mp:num(x[9]),mr:num(x[10])}));
   S.informes={};(r.inf||[]).forEach(x=>{if(x&&x[0])S.informes[x[0]]=x});
@@ -604,7 +604,7 @@ function vInicio(){
 
 /* ============ Partidos ============ */
 function vPartidos(){
-  const ms=fMatches();let h=`<h2>Partidos</h2>${compChips()}`;
+  const ms=fMatches();let h=`<h2>Partidos</h2>${window.vCalendario?window.vCalendario():""}${compChips()}`;
   if(!ms.length)return h+`<section class="sec"><p class="empty">Aún no hay partidos en ${esc(S.comp)}.</p></section>`;
   let acc=0;const pts=ms.map(m=>{acc+=m.pts;return {x:dShort(m.fecha),y:acc,c:m.res==="G"?"var(--ok)":m.res==="E"?"var(--warn)":"var(--danger)"}});
   h+=`<section class="sec"><div class="sec-h"><h3>Puntos acumulados</h3><span class="hint">Línea punteada: ritmo perfecto (3 por partido)</span></div>${lineChart(pts,{max:ms.length*3,ideal:[3,ms.length*3],aria:"Puntos acumulados por partido"})}</section>`;
@@ -1416,15 +1416,15 @@ const CLUB={nombre:"",cat:"",sede:"",ciudad:"",comps:[],dt:"",dtFoto:"",dtOrigen
 /* Ficha del club: filas "Ficha · …" de la pestaña Config (las edita el DT) */
 function fichaDe(cf){const g=k=>String(cf["Ficha · "+k]||"").trim();CLUB.nombre=g("Nombre")||cf["Club"]||"";CLUB.cat=g("Categoría")||cf["Categoría"]||"";CLUB.sede=g("Sede");CLUB.ciudad=g("Ciudad");CLUB.comps=g("Competiciones").split(/\s*;\s*/).filter(Boolean);CLUB.dt=g("Entrenador")||cf["Director técnico"]||"";CLUB.dtOrigen=g("Lugar de nacimiento del entrenador");CLUB.dtNac=pDate(g("Nacimiento del entrenador"));CLUB.dtDesde=pDate(g("Entrenador desde"))}
 function yearsSince(d){const t=new Date();let y=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))y--;return y}
-function nextMatch(){const f=S.fixtures&&S.fixtures[0];if(f)return {rival:f.rival,fecha:f.fecha,comp:f.comp,loc:f.loc,src:"Partidos"};
+function nextMatch(){const f=S.fixtures&&S.fixtures[0];if(f)return Object.assign({},f,{src:"Partidos"});
   const inf=[...S.partidos].reverse().map(m=>S.informes[m.id]).find(x=>x&&x[30]);if(!inf)return null;const d=pDate(inf[31]);return {rival:inf[30],fecha:d&&d>=today0()?d:null,comp:"",loc:"",src:"informe"}}
 function countdown(d){if(!d)return "Fecha por confirmar";const n=daysBetween(today0(),d);return n===0?"Hoy":n===1?"Mañana":`En ${n} días`}
 function clubHero(){
   const nm=nextMatch();const last=[...S.partidos].slice(-5);
   let h=`<section class="club-hero"><div class="ch-in">${ourCrest(60)}<div class="ch-t"><b>${esc(CLUB.nombre)}</b><span>${esc(CLUB.cat)}</span></div></div></section>`;
   h+=`<div class="cols"><section class="sec"><div class="sec-h"><h3>Próximo partido</h3>${nm&&nm.comp?`<span class="hint">${esc(nm.comp)}</span>`:""}</div>${nm?`<div class="nm-card"><div class="nm-tm">${nm.loc==="Visitante"?rivalCrest(nm.rival,52):ourCrest(52)}<span>${esc(nm.loc==="Visitante"?nm.rival:"Jaguares")}</span></div>
-     <div class="nm-mid"><b>${countdown(nm.fecha)}</b>${nm.fecha?`<span>${esc(["dom","lun","mar","mié","jue","vie","sáb"][nm.fecha.getDay()]+", "+dLong(nm.fecha))}</span>`:""}${nm.loc?`<span>${esc(nm.loc)}</span>`:""}</div>
-     <div class="nm-tm">${nm.loc==="Visitante"?ourCrest(52):rivalCrest(nm.rival,52)}<span>${esc(nm.loc==="Visitante"?"Jaguares":nm.rival)}</span></div></div>${nm.src==="informe"?'<p class="hint">Tomado del último informe. Si registras el partido en la pestaña Partidos antes de jugarlo, aquí aparece la fecha y la localía.</p>':""}`:'<p class="empty">El próximo rival aparece cuando lo anotas en el cierre de un partido o registras el partido en la pestaña Partidos.</p>'}</section>
+     <div class="nm-mid"><b>${countdown(nm.fecha)}</b>${nm.fecha?`<span>${esc(["dom","lun","mar","mié","jue","vie","sáb"][nm.fecha.getDay()]+", "+dLong(nm.fecha))}</span>`:""}${nm.loc?`<span>${esc(nm.loc)}</span>`:""}${window.calDetalle&&window.calDetalle(nm)?`<span>${esc(window.calDetalle(nm))}</span>`:""}</div>
+     <div class="nm-tm">${nm.loc==="Visitante"?ourCrest(52):rivalCrest(nm.rival,52)}<span>${esc(nm.loc==="Visitante"?"Jaguares":nm.rival)}</span></div></div>${nm.src==="informe"?'<p class="hint">Tomado del último informe. Agrega los próximos partidos en Partidos → Próximos partidos y aquí aparecen con fecha, hora y cancha.</p>':""}${window.calDespues?window.calDespues():""}`:'<p class="empty">Agrega los próximos partidos en Partidos → Próximos partidos.</p>'}</section>
    <section class="sec"><h3 style="text-align:center">Forma reciente</h3>${last.length?`<div class="form5">${last.map((m,i)=>`<a class="f5" href="#partido-${esc(m.id)}" aria-label="${esc(m.rival)} ${m.gf}-${m.gc}"><span class="f5s ${m.res}">${m.gf} - ${m.gc}</span>${rivalCrest(m.rival,34)}${i===last.length-1?'<i class="f5d"></i>':""}</a>`).join("")}</div>`:'<p class="empty">Sin partidos todavía.</p>'}</section></div>`;
   return h;
 }

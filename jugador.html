@@ -174,7 +174,7 @@ async function llamar(ses,body){
 }
 function pedir(ses,sinFotos){return llamar(ses,{op:"jugDatos",sinFotos:!!sinFotos})}
 function guardar(r,recordar){
-  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
+  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,proximos:r.proximos||null,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
   if(r.fotos){S.fotos=r.fotos}
   if(recordar){LS.set("datos",S.d);LS.set("stamp",S.stamp);if(r.fotos)LS.set("fotos",r.fotos)}
 }
@@ -213,10 +213,16 @@ function vDatos(){
   if(S.offline)h+=`<div class="banner warn">Sin señal: ves la información guardada el ${esc(dL(new Date(S.stamp)))}.</div>`;
   if(S.err)h+=`<div class="banner err">${esc(S.err)}</div>`;
   h+=`<section class="sec"><div class="hero"><span class="av">${foto?`<img src="${foto}" alt="">`:esc(ini(j.nombre))}</span><div><h2>${esc(j.nombre)}</h2><p class="hint" style="font-size:1rem">${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.pos1||"")}${j.pos2?" · "+esc(j.pos2):""}</p></div></div></section>`;
-  // Próximo partido
-  const p=d.proximo,pf=p&&pD(p.fecha);
-  if(p){const hoy=new Date();hoy.setHours(0,0,0,0);const dd=pf?Math.round((pf-hoy)/864e5):null;
-    h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p></div>${dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div></section>`}
+  // Próximo partido (puente v16: lista «proximos» del calendario del DT; antes, solo «proximo»)
+  const hoy0=new Date();hoy0.setHours(0,0,0,0);
+  const prox=(d.proximos||(d.proximo?[d.proximo]:[])).filter(x=>{const f=pD(x.fecha);return !f||f>=hoy0});
+  const hora=x=>{const m=/^(\d{1,2}):(\d{2})/.exec(String(x||""));if(!m)return String(x||"");let H=+m[1];const ap=H>=12?"p. m.":"a. m.";H=H%12||12;return H+":"+m[2]+" "+ap};
+  const p=prox[0],pf=p&&pD(p.fecha);
+  if(p){const dd=pf?Math.round((pf-hoy0)/864e5):null;
+    const det=[p.hora?hora(p.hora):"",p.cancha||""].filter(Boolean).join(" · ");
+    h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p>${det?`<p class="hint" style="margin-top:2px"><b>${esc(det)}</b></p>`:""}${p.citacion?`<p class="hint" style="margin-top:2px">Citación: <b>${esc(hora(p.citacion))}</b></p>`:""}${p.aviso?`<p class="hint" style="margin-top:2px">${esc(p.aviso)}</p>`:""}</div>${/aplaz/i.test(p.estado||"")?'<span class="chip">Aplazado</span>':dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div>`;
+    if(prox.length>1)h+=`<h3 style="margin-top:14px">Próximos partidos</h3><div class="list">${prox.slice(1).map(x=>{const f=pD(x.fecha);return `<div class="li" style="cursor:default"><span style="flex:1"><b>vs ${esc(x.rival)}</b><br><span class="hint">${esc([f?DIA[f.getDay()]+", "+dL(f):"",x.hora?hora(x.hora):"",x.localia,x.comp].filter(Boolean).join(" · "))}</span></span>${/aplaz/i.test(x.estado||"")?'<span class="chip">Aplazado</span>':""}</div>`}).join("")}</div>`;
+    h+=`</section>`}
   // Partidos
   const ps=(d.partidos||[]).slice().sort((a,b)=>(pD(b.fecha)||0)-(pD(a.fecha)||0)),conv=ps.filter(x=>x.convocado),jug=conv.filter(x=>n(x.min)>0);
   const sum=k=>conv.reduce((a,x)=>a+(n(x[k])||0),0),gk=/portero/i.test(j.pos1||""),dur=d.duracion||80;

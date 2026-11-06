@@ -447,4 +447,89 @@ document.addEventListener("click", ev => {
   else if (a === "cm-quitaremo" && P) comUpsert("comunidad/" + id, { emo: null }, "Emoji quitado.");
   else if (a === "cm-borrar") { if (!confirm("¿Borrar este anuncio del muro?")) return; comEscribir([{ tipo: "delete", ruta: "anuncios/" + id }], "Anuncio borrado."); }
 });
+
+/* ============ v4.1 · Calendario de próximos partidos (hoja «Calendario») ============
+   Columnas: ID · Fecha · Hora · Rival · Competición · Localía · Cancha / Sede · Citación · Nota · Estado.
+   Los partidos ya jugados (con marcador en Partidos) y los de fechas pasadas salen solos de la lista. */
+const ESTADOS_CAL = ["Programado", "Aplazado", "Cancelado"];
+const horaTxt = h => { const m = /^(\d{1,2}):(\d{2})/.exec(String(h || "")); if (!m) return String(h || ""); let H = +m[1]; const ap = H >= 12 ? "p. m." : "a. m."; H = H % 12 || 12; return H + ":" + m[2] + " " + ap; };
+const DIAS3 = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+window.calFusionar = function (r) {
+  const clave = (f, rv) => (f ? f.getTime() : "") + "|" + String(rv || "").trim().toLowerCase();
+  const jugados = new Set(S.partidos.map(p => clave(p.fecha, p.rival)));
+  S.cal = (r.cal || []).map((x, i) => x && x[3] ? { row: i + 2, id: x[0] || "", fecha: pDate(x[1]), hora: x[2] || "", rival: x[3], comp: x[4] || "", loc: x[5] || "", cancha: x[6] || "", cit: x[7] || "", nota: x[8] || "", estado: x[9] || "Programado" } : null).filter(Boolean);
+  S.calFilas = (r.cal || []).length;
+  const hoy = today0(), visto = new Set(), out = [];
+  S.cal.forEach(c => { if (!c.fecha || c.fecha < hoy || /cancel/i.test(c.estado)) return; const k = clave(c.fecha, c.rival); if (jugados.has(k) || visto.has(k)) return; visto.add(k); out.push(Object.assign({ src: "cal" }, c)); });
+  (S.fixtures || []).forEach(f => { const k = clave(f.fecha, f.rival); if (visto.has(k)) return; visto.add(k); out.push(Object.assign({ hora: "", cancha: "", cit: "", nota: "", estado: "" }, f)); });
+  out.sort((a, b) => a.fecha - b.fecha || String(a.hora).localeCompare(String(b.hora)));
+  S.fixtures = out;
+};
+const fechaCorta = d => d ? DIAS3[d.getDay()] + " " + d.getDate() + " " + MES[d.getMonth()] : "";
+window.calDetalle = function (f) { return [f.hora ? horaTxt(f.hora) : "", f.cancha, f.cit ? "Citación " + horaTxt(f.cit) : ""].filter(Boolean).join(" · "); };
+window.calDespues = function () {
+  const sig = (S.fixtures || []).slice(1, 4); if (!sig.length) return "";
+  return `<div class="list" style="margin-top:12px">${sig.map(f => `<div class="li" style="cursor:default"><span class="nm" style="flex:1"><b>Después: ${esc(f.rival)}</b><br><span class="hint">${esc([fechaCorta(f.fecha), f.hora ? horaTxt(f.hora) : "", f.loc].filter(Boolean).join(" · "))}</span></span>${/aplaz/i.test(f.estado) ? '<span class="chip sus">Aplazado</span>' : ""}</div>`).join("")}</div>`;
+};
+let CAL = null; // ventana de edición
+window.vCalendario = function () {
+  const hoy = today0();
+  const prox = (S.cal || []).filter(c => c.fecha && c.fecha >= hoy).sort((a, b) => a.fecha - b.fecha || String(a.hora).localeCompare(String(b.hora)));
+  const pasados = (S.cal || []).filter(c => c.fecha && c.fecha < hoy).length;
+  let h = `<section class="sec" id="calendario"><div class="sec-h"><h3>Próximos partidos</h3><button class="btn sm pri" data-act="cal-nuevo">Agregar partido</button></div>`;
+  if (!prox.length) h += `<p class="empty">No hay partidos programados. Agrégalos aquí: aparecen en Inicio y en Mi progreso de cada jugador.</p>`;
+  else h += `<div class="list">${prox.map(c => `<button class="li" data-act="cal-editar" data-row="${c.row}" style="text-align:left;width:100%">${rivalCrest(c.rival, 36)}<span class="nm" style="flex:1"><b>vs ${esc(c.rival)}</b><br><span class="hint">${esc([fechaCorta(c.fecha), c.hora ? horaTxt(c.hora) : "", c.loc, c.comp].filter(Boolean).join(" · "))}</span>${c.cancha || c.cit ? `<br><span class="hint">${esc([c.cancha, c.cit ? "Citación " + horaTxt(c.cit) : ""].filter(Boolean).join(" · "))}</span>` : ""}</span>${/aplaz/i.test(c.estado) ? '<span class="chip sus">Aplazado</span>' : /cancel/i.test(c.estado) ? '<span class="chip les">Cancelado</span>' : ""}</button>`).join("")}</div>`;
+  h += `<p class="hint">Lo ven los jugadores y las familias en Mi progreso (fecha, hora, cancha, citación y nota). Los partidos jugados o con fecha pasada salen solos${pasados ? ` (${pasados} en el historial de la hoja «Calendario»)` : ""}.</p></section>`;
+  return h;
+};
+function calVentana() {
+  let el = document.getElementById("cal-ovl");
+  if (!CAL) { if (el) el.remove(); document.body.style.overflow = ""; return; }
+  if (!el) { el = document.createElement("div"); el.id = "cal-ovl"; el.className = "ovl"; document.body.appendChild(el); document.body.style.overflow = "hidden"; }
+  const c = CAL.c, rivales = [...new Set([...(S.partidos || []).map(p => p.rival), ...(S.cal || []).map(x => x.rival)].filter(Boolean))].sort();
+  const comps = [...new Set([...(CLUB.comps || []), ...(S.partidos || []).map(p => p.comp), "Amistoso"].filter(Boolean))];
+  const iso = d => d ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") : "";
+  const hhmm = h => { const m = /^(\d{1,2}):(\d{2})/.exec(String(h || "")); return m ? m[1].padStart(2, "0") + ":" + m[2] : ""; };
+  el.innerHTML = `<div class="box" role="dialog" aria-label="${c.row ? "Editar partido" : "Agregar partido"}"><div class="sec-h"><h2>${c.row ? "Editar partido" : "Agregar partido"}</h2><button class="btn sm" data-act="cal-cerrar">Cerrar</button></div>
+    <div class="fgrid">
+      <label class="f">Fecha<input type="date" id="cal-fecha" value="${iso(c.fecha)}" required></label>
+      <label class="f">Hora<input type="time" id="cal-hora" value="${hhmm(c.hora)}"></label>
+      <label class="f" style="grid-column:1/-1">Rival<input id="cal-rival" list="cal-rivales" autocomplete="off" value="${esc(c.rival || "")}" placeholder="Ej. Cordeajax"></label>
+      <datalist id="cal-rivales">${rivales.map(x => `<option value="${esc(x)}">`).join("")}</datalist>
+      <label class="f">Competición<input id="cal-comp" list="cal-comps" autocomplete="off" value="${esc(c.comp || "")}"></label>
+      <datalist id="cal-comps">${comps.map(x => `<option value="${esc(x)}">`).join("")}</datalist>
+      <label class="f">Localía<select id="cal-loc">${["", "Local", "Visitante", "Neutral"].map(x => `<option ${x === c.loc ? "selected" : ""} value="${x}">${x || "—"}</option>`).join("")}</select></label>
+      <label class="f">Cancha / sede<input id="cal-cancha" value="${esc(c.cancha || "")}" placeholder="Ej. Ciudad Jaguares"></label>
+      <label class="f">Citación<input type="time" id="cal-cit" value="${hhmm(c.cit)}"></label>
+      <label class="f" style="grid-column:1/-1">Nota para jugadores y familias<input id="cal-nota" maxlength="140" value="${esc(c.nota || "")}" placeholder="Ej. Uniforme azul, llevar hidratación"></label>
+      ${c.row ? `<label class="f" style="grid-column:1/-1">Estado<select id="cal-estado">${ESTADOS_CAL.map(x => `<option ${x === (c.estado || "Programado") ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}
+    </div>
+    ${CAL.err ? `<div class="banner err">${esc(CAL.err)}</div>` : ""}
+    <button class="btn pri wide" data-act="cal-guardar" ${CAL.busy ? "disabled" : ""}>${CAL.busy ? "Guardando…" : "Guardar"}</button>
+    ${c.row ? `<button class="linkbtn" data-act="cal-quitar" ${CAL.busy ? "disabled" : ""} style="color:var(--danger)">Quitar del calendario</button>` : ""}</div>`;
+}
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("[data-act^='cal-']"); if (!t) return;
+  const a = t.dataset.act, $v = id => { const x = document.getElementById(id); return x ? String(x.value || "").trim() : ""; };
+  if (a === "cal-nuevo") { CAL = { c: { loc: "", estado: "Programado" } }; calVentana(); return; }
+  if (a === "cal-editar") { const c = (S.cal || []).find(x => x.row === +t.dataset.row); if (c) { CAL = { c: Object.assign({}, c) }; calVentana(); } return; }
+  if (a === "cal-cerrar") { CAL = null; calVentana(); return; }
+  if (!CAL || CAL.busy) return;
+  if (!navigator.onLine) { CAL.err = "Se necesita señal para guardar el calendario."; calVentana(); return; }
+  const c = CAL.c;
+  let fila, ok;
+  if (a === "cal-quitar") {
+    if (!confirm("¿Quitar este partido del calendario?")) return;
+    fila = ["", "", "", "", "", "", "", "", "", ""]; ok = "Partido quitado del calendario.";
+  } else if (a === "cal-guardar") {
+    const fecha = $v("cal-fecha"), rival = $v("cal-rival");
+    if (!fecha || !rival) { CAL.err = "Escribe la fecha y el rival."; calVentana(); return; }
+    fila = [c.id || "C" + Date.now().toString(36), dateFormula(fecha), $v("cal-hora"), rival.slice(0, 60), $v("cal-comp").slice(0, 60), $v("cal-loc"), $v("cal-cancha").slice(0, 80), $v("cal-cit"), $v("cal-nota").slice(0, 140), c.row ? ($v("cal-estado") || "Programado") : "Programado"];
+    ok = c.row ? "Partido actualizado." : "Partido agregado al calendario.";
+  } else return;
+  const row = c.row || (2 + (S.calFilas || 0));
+  CAL.busy = true; CAL.err = null; calVentana();
+  try { await gs("update_values", { range: `Calendario!A${row}:J${row}`, values: [fila] }); CAL = null; calVentana(); toast(ok); await loadAll(); }
+  catch (e) { CAL.busy = false; CAL.err = "No se pudo guardar: " + gsErrorText(e) + (e && /operacion|Calendario|hoja/i.test(String(e.message || e.code || "")) ? " ¿Ya pegaste el puente v16?" : ""); calVentana(); }
+});
 })();
