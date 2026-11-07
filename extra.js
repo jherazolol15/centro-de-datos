@@ -548,11 +548,11 @@ window.bienExtra = function (act, resp) {
     ${BE && BE.vinculada ? '<div class="banner warn">La pestaña Bienestar todavía recibe respuestas de un Google Forms. Ciérralo («No aceptar respuestas») o desvincúlalo para no mezclar filas.</div>' : ""}
     ${BE && BE.existe === false ? '<div class="banner err">No existe la pestaña «Bienestar» en la hoja.</div>' : ""}
     ${BE && BE.error ? '<div class="banner warn">Para el formulario dentro de la app hace falta el puente v17.</div>' : ""}
-    ${link ? `<button class="btn sm" data-act="bien-copiar">Copiar enlace para WhatsApp</button> <span class="hint">Siempre es el mismo: abre Mi progreso directo en el formulario. Se pide responder el viernes antes de medianoche y se recibe hasta el sábado.</span>` : ""}`;
+    ${link ? `<button class="btn sm" data-act="bien-copiar">Copiar enlace para WhatsApp</button> <span class="hint">Siempre es el mismo: abre Mi progreso directo en el formulario. Se pide responder el viernes después del último entrenamiento y se recibe hasta el sábado.</span>` : ""}`;
 };
 document.addEventListener("click", async ev => {
   const t = ev.target.closest("[data-act='bien-copiar']"); if (!t) return;
-  const txt = "📋 Formulario de bienestar de la semana (Jaguares). Respóndelo HOY VIERNES antes de medianoche (se recibe hasta el sábado). Son 2 minutos: " + enlaceBien();
+  const txt = "📋 Formulario de bienestar de la semana (Jaguares). Respóndelo HOY VIERNES, después del entrenamiento (se recibe hasta el sábado). Son 2 minutos: " + enlaceBien();
   try { await navigator.clipboard.writeText(txt); toast("Enlace copiado. Pégalo en el grupo de WhatsApp."); } catch (e) { prompt("Copia este mensaje:", txt); }
 });
 })();
