@@ -81,7 +81,11 @@ label.f input{font-size:1.1rem;text-transform:none;letter-spacing:0;color:var(--
 .bn-ops.n5 .bn-op{text-align:center;font:800 1.5rem var(--display);padding:6px 0}
 .bn-op[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
 .bn-ext{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;color:var(--muted);margin-top:6px}
-.bn-res{display:grid;gap:6px;margin:10px 0}.bn-res button{display:flex;justify-content:space-between;gap:10px;text-align:left;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;font:500 .92rem var(--body);cursor:pointer}.bn-res b{white-space:nowrap}
+.bn-res{display:grid;gap:6px;margin:10px 0;min-width:0}
+/* Revisa y envía: pregunta y respuesta en una línea, con puntos suspensivos si no caben (nunca se salen de la pantalla) */
+.bn-res button{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;max-width:100%;box-sizing:border-box;text-align:left;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;font:500 .92rem var(--body);cursor:pointer}
+.bn-res button span,.bn-res b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bn-res b{max-width:42vw;text-align:right}
 #bn-l{width:100%;min-height:110px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:10px 12px;font:inherit;resize:vertical}
 .tabs button .pt{position:absolute;top:6px;margin-left:18px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
 .banner.err{background:var(--danger-soft);border:1px solid var(--danger)}
@@ -541,7 +545,7 @@ function vBienForm(){
     else h+=`<div class="bn-ops n5" role="group" aria-label="${esc(q.t)}">${[1,2,3,4,5].map(v=>`<button class="bn-op" data-a="bn-op" data-v="${v}" aria-pressed="${Number(f.r[q.k])===v}" aria-label="${v} de 5">${v}</button>`).join("")}</div><div class="bn-ext"><span>1 = ${esc(q.a)}</span><span style="text-align:right">5 = ${esc(q.b)}</span></div>`;
     h+=`<div style="display:flex;justify-content:space-between;margin-top:14px">${f.paso>0?'<button class="btn sm" data-a="bn-atras">← Atrás</button>':"<span></span>"}</div>`;
   }else{
-    h+=`<h2 class="bn-q">Revisa y envía</h2><p class="hint">Toca una respuesta para cambiarla.</p><div class="bn-res">${BQ.map((x,i)=>`<button data-a="bn-ir" data-v="${i}"><span>${esc(x.t)}</span><b>${esc(bienTxt(x,f.r[x.k]))}</b></button>`).join("")}</div>
+    h+=`<h2 class="bn-q">Revisa y envía</h2><p class="hint">Toca una respuesta para cambiarla.</p><div class="bn-res">${BQ.map((x,i)=>`<button data-a="bn-ir" data-v="${i}" title="${esc(x.t)}"><span>${esc(x.t)}</span><b>${esc(bienTxt(x,f.r[x.k]))}</b></button>`).join("")}</div>
      ${f.err?`<div class="banner err">${esc(f.err)}</div>`:""}
      <button class="btn pri" data-a="bn-enviar" style="width:100%" ${f.busy?"disabled":""}>${f.busy?"Enviando…":S.bn&&S.bn.respuesta?"Guardar corrección":"Enviar"}</button>`;
   }
