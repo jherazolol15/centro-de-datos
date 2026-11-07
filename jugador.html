@@ -71,6 +71,19 @@ label.f input{font-size:1.1rem;text-transform:none;letter-spacing:0;color:var(--
 .btn.sm{min-height:40px;font-size:.9rem;padding:6px 14px}
 .btn:disabled{opacity:.5}
 .banner{border-radius:12px;padding:10px 12px;font-size:.92rem}
+/* v4.2 · Bienestar semanal */
+.bn-card{border:2px solid var(--accent)}
+.bn-card.ok{border:1px solid var(--border)}
+.bn-prog{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:6px 0 14px}.bn-prog i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bn-q{font-family:var(--display);font-weight:800;font-size:1.55rem;line-height:1.15;margin:4px 0 6px;text-transform:none;letter-spacing:.01em}
+.bn-ops{display:grid;gap:8px;margin-top:12px}.bn-ops.n5{grid-template-columns:repeat(5,1fr)}
+.bn-op{min-height:58px;border-radius:14px;border:2px solid var(--border);background:var(--surface-2);color:var(--ink);font:700 1.05rem var(--body);cursor:pointer;padding:8px 10px;text-align:left}
+.bn-ops.n5 .bn-op{text-align:center;font:800 1.5rem var(--display);padding:6px 0}
+.bn-op[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
+.bn-ext{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;color:var(--muted);margin-top:6px}
+.bn-res{display:grid;gap:6px;margin:10px 0}.bn-res button{display:flex;justify-content:space-between;gap:10px;text-align:left;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;font:500 .92rem var(--body);cursor:pointer}.bn-res b{white-space:nowrap}
+#bn-l{width:100%;min-height:110px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:10px 12px;font:inherit;resize:vertical}
+.tabs button .pt{position:absolute;top:6px;margin-left:18px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
 .banner.err{background:var(--danger-soft);border:1px solid var(--danger)}
 .banner.warn{background:var(--warn-soft);border:1px solid var(--warn)}
 .empty{color:var(--muted);font-size:.92rem;margin:0}
@@ -162,7 +175,7 @@ function tV(v,u){if(v==null)return "–";if(u==="s"&&v>=60){const t=Math.round(v
 function ini(s){const p=String(s||"").split(/\s+/).filter(Boolean);return ((p[0]||"?")[0]+((p[p.length>2?p.length-2:1]||"")[0]||"")).toUpperCase()}
 
 /* Enlace del entrenador: trae la dirección del puente (no está en el código público) */
-(function(){const m=/#p=([^&]+)/.exec(location.hash||"");if(!m)return;try{const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));if(o&&o.url&&/^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/(localhost|127\.0\.0\.1)/.test(o.url))LS.set("url",o.url)}catch(e){}history.replaceState(null,"",location.pathname)})();
+(function(){const m=/#p=([^&]+)/.exec(location.hash||"");if(!m)return;try{const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));if(o&&o.url&&/^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/(localhost|127\.0\.0\.1)/.test(o.url))LS.set("url",o.url)}catch(e){}if(/[#&]ir=bienestar/.test(location.hash)){LS.set("abrirBien",1);LS.set("tab","prog")}history.replaceState(null,"",location.pathname)})();
 
 const S={url:LS.get("url",""),ses:LS.get("ses",null),d:LS.get("datos",null),fotos:LS.get("fotos",null),err:null,busy:false,offline:false,stamp:LS.get("stamp",0),todos:false};
 let memSes=null;
@@ -183,18 +196,18 @@ async function entrar(ev){
   const doc=document.getElementById("doc").value.trim(),codigo=document.getElementById("cod").value.replace(/\D/g,""),rec=document.getElementById("rec").checked;
   if(!doc||codigo.length!==6){S.err="Escribe el número de documento y el código de 6 dígitos.";render();return}
   S.busy=true;S.err=null;render();
-  try{const ses={doc,codigo};const r=await pedir(ses,false);if(rec){S.ses=ses;LS.set("ses",ses)}else{memSes=ses;S.ses=null}guardar(r,rec);S.offline=false;setTimeout(cargarEquipo,0)}
+  try{const ses={doc,codigo};const r=await pedir(ses,false);if(rec){S.ses=ses;LS.set("ses",ses)}else{memSes=ses;S.ses=null}guardar(r,rec);S.offline=false;setTimeout(cargarEquipo,0);setTimeout(cargarBien,0)}
   catch(e){S.err=ERR[e.code]||ERR.red}
   S.busy=false;render();
 }
 async function actualizar(){
   const ses=S.ses||memSes;if(!ses||S.busy)return;
   S.busy=true;render();
-  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null;setTimeout(cargarEquipo,0);setTimeout(()=>cargarVivo(true),500)}
+  try{const r=await pedir(ses,!!(S.fotos&&S.fotos.jugador!==undefined));guardar(r,!!S.ses);S.offline=false;S.err=null;setTimeout(cargarEquipo,0);setTimeout(cargarBien,0);setTimeout(()=>cargarVivo(true),500)}
   catch(e){if(e.code==="acceso_invalido"||e.code==="inactivo"){salir(true);S.err="El código cambió o el acceso ya no está activo. Pide el código nuevo al entrenador.";}else S.offline=true}
   S.busy=false;render();
 }
-function salir(sil){LS.del("ses");LS.del("datos");LS.del("fotos");LS.del("stamp");LS.del("equipo");LS.del("fx");S.eq=null;S.fx={};S.tab="prog";S.ses=null;memSes=null;S.d=null;S.fotos=null;if(!sil)render()}
+function salir(sil){LS.del("bien");LS.del("bienPend");S.bn=null;S.bf=null;LS.del("ses");LS.del("datos");LS.del("fotos");LS.del("stamp");LS.del("equipo");LS.del("fx");S.eq=null;S.fx={};S.tab="prog";S.ses=null;memSes=null;S.d=null;S.fotos=null;if(!sil)render()}
 
 function vLogin(){
   if(!S.url)return `<section class="sec"><h2>Mi progreso</h2><p>Para entrar, abre el enlace que te envió el entrenador por WhatsApp.</p></section>`;
@@ -211,6 +224,7 @@ function vDatos(){
   const d=S.d,j=d.jugador,foto=S.fotos&&S.fotos.jugador;
   let h="";
   if(S.offline)h+=`<div class="banner warn">Sin señal: ves la información guardada el ${esc(dL(new Date(S.stamp)))}.</div>`;
+  h+=vBienCard();
   if(S.err)h+=`<div class="banner err">${esc(S.err)}</div>`;
   h+=`<section class="sec"><div class="hero"><span class="av">${foto?`<img src="${foto}" alt="">`:esc(ini(j.nombre))}</span><div><h2>${esc(j.nombre)}</h2><p class="hint" style="font-size:1rem">${j.dorsal?"#"+esc(j.dorsal)+" · ":""}${esc(j.pos1||"")}${j.pos2?" · "+esc(j.pos2):""}</p></div></div></section>`;
   // Próximo partido (puente v16: lista «proximos» del calendario del DT; antes, solo «proximo»)
@@ -263,11 +277,11 @@ function render(){
   const dentro=!!(d&&(S.ses||memSes));
   document.body.classList.toggle("con-tabs",dentro);
   const ae=document.activeElement,aid=ae&&ae.id;
-  document.getElementById("app").innerHTML=!dentro?vLogin():S.tab==="equipo"?vEquipo():S.tab==="muro"?vMuro():S.tab==="vivo"?vVivo():vDatos();
+  document.getElementById("app").innerHTML=!dentro?vLogin():S.tab==="equipo"?vEquipo():S.tab==="muro"?vMuro():S.tab==="vivo"?vVivo():S.bf?vBienForm():vDatos();
   if(aid){const el=document.getElementById(aid);if(el&&el.tagName==="TEXTAREA"){el.focus();el.selectionStart=el.selectionEnd=el.value.length}}
   let nav=document.getElementById("tabs");
   if(dentro){if(!nav){nav=document.createElement("nav");nav.id="tabs";nav.className="tabs";document.body.appendChild(nav)}
-    nav.innerHTML=`<div class="tabs-in">${[["prog","📈","Mi progreso"],["equipo","👥","Equipo"],["muro","🏆","Muro"],["vivo","⚽","En vivo"]].map(([k,i,l])=>`<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}><span>${i}</span>${l}${k==="vivo"&&S.vv&&S.vv.actual&&vivoEstado(S.vv).enJuego?'<i class="livedot"></i>':""}</button>`).join("")}</div>`}
+    nav.innerHTML=`<div class="tabs-in">${[["prog","📈","Mi progreso"],["equipo","👥","Equipo"],["muro","🏆","Muro"],["vivo","⚽","En vivo"]].map(([k,i,l])=>`<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}><span>${i}</span>${l}${k==="prog"&&bienAviso()?'<i class="pt"></i>':""}${k==="vivo"&&S.vv&&S.vv.actual&&vivoEstado(S.vv).enJuego?'<i class="livedot"></i>':""}</button>`).join("")}</div>`}
   else if(nav)nav.remove();
   const f=document.getElementById("login");if(f)f.onsubmit=entrar;
   ventanaPerfil();
@@ -279,6 +293,7 @@ document.addEventListener("click",ev=>{const t=ev.target.closest("[data-a]");if(
   else if(t.dataset.a==="salir"){if(confirm("¿Salir? Se borrará la información guardada en este teléfono."))salir()}});
 
 /* ============ Comunidad: Equipo, Muro y Mi perfil ============ */
+if(location.hash==="#bienestar"){LS.set("abrirBien",1);LS.set("tab","prog");history.replaceState(null,"",location.pathname)}
 S.tab=LS.get("tab","prog");if(/^#(vivo|muro|equipo|prog)$/.test(location.hash)){S.tab=location.hash.slice(1);LS.set("tab",S.tab);history.replaceState(null,"",location.pathname)}S.eq=LS.get("equipo",null);S.fx=LS.get("fx",{});S.ver=null;S.eqBusy=false;S.pf=null;
 const RX=[["aplauso","👏"],["fuego","🔥"],["fuerza","💪"],["corazon","❤️"],["balon","⚽"]];
 const ICO={victoria:"🏆",mvp:"⭐",gol:"⚽",hattrick:"⚽",asis:"🎯",valla:"🧤",debut:"🌟",test:"📈",cumple:"🎂",anuncio:"📣",promocion:"🚀",post:"💬"};
@@ -405,6 +420,7 @@ async function enviarPerfil(){
 document.addEventListener("input",ev=>{const t=ev.target;if(!S.pf)return;if(t.id==="pf-desc"){S.pf.desc=t.value;const c=document.getElementById("pf-cnt");if(c)c.textContent="("+t.value.length+"/280)"}if(t.id==="pf-apodo")S.pf.apodo=t.value});
 function clicComunidad(t){
   const a=t.dataset.a;
+  if(a&&a.indexOf("bn-")===0){clicBien(t);return true}
   if(a==="tab"){S.tab=t.dataset.v;LS.set("tab",S.tab);render();window.scrollTo(0,0);if(S.tab==="vivo")cargarVivo(true);else if(S.tab!=="prog")cargarEquipo();return true}
   if(a==="animo"){animo();return true}
   if(a==="aplauso"){aplaudir(t.dataset.ev,t.dataset.t);return true}
@@ -470,6 +486,84 @@ function aplaudir(ev,t){S.reacPend.push({e:ev,t});const ap=S.vv&&S.vv.aplausos;i
 setInterval(()=>{if(document.visibilityState!=="visible"||!ses0())return;if(S.tab==="vivo")cargarVivo(false);else if(Date.now()-S.vvT>60000)cargarVivo(true)},15000);
 setInterval(()=>{if(S.tab==="vivo"&&S.vv&&S.vv.actual)render()},30000);
 addEventListener("online",()=>{if(S.offline)actualizar()});
+/* ============ v4.2 · Bienestar semanal (reemplaza el Google Forms) ============
+   Solo el propio jugador ve su respuesta de la semana. Nunca se muestra en Equipo, Muro ni En vivo. */
+const BQ=[
+ {k:"c",t:"¿Cómo dormiste esta semana?",a:"Muy mal",b:"Muy bien"},
+ {k:"d",t:"¿Cuántas horas dormiste por noche, en promedio?",o:[[5,"Menos de 6"],[6,"6 horas"],[7,"7 horas"],[8,"8 horas"],[9,"9 o más"]]},
+ {k:"e",t:"¿Cómo te alimentaste?",a:"Comí mal o salté comidas",b:"Comí bien todos los días"},
+ {k:"f",t:"¿Cuánta agua tomaste?",a:"Casi nada",b:"Bastante, todos los días"},
+ {k:"g",t:"¿Cómo sientes tu cuerpo?",a:"Muy cansado o pesado",b:"Fresco y con energía"},
+ {k:"h",t:"¿Tienes alguna molestia o dolor?",o:[["Ninguna","Ninguna"],["Leve, entreno normal","Leve, entreno normal"],["Moderada, me molesta al entrenar","Moderada, me molesta al entrenar"],["Fuerte, no puedo entrenar bien","Fuerte, no puedo entrenar bien"]]},
+ {k:"i",t:"¿Cómo estuvo tu ánimo?",a:"Triste o desmotivado",b:"Muy animado"},
+ {k:"j",t:"¿Qué tan tranquilo te sentiste con el colegio, la casa y el equipo?",a:"Muy estresado",b:"Muy tranquilo"},
+ {k:"k",t:"¿Qué tan dura fue la semana de entrenamiento?",a:"Muy suave",b:"Muy dura"},
+ {k:"l",t:"¿Algo más que quieras contarle al profe?",libre:1}
+];
+const ERRB={respuesta_invalida:"Revisa las respuestas e intenta de nuevo.",texto_largo:"El comentario pasa de 500 caracteres.",no_aplica:"Este formulario es solo para jugadores activos.",red:"Sin señal. Tus respuestas siguen aquí; intenta de nuevo cuando tengas conexión."};
+S.bn=LS.get("bien",null);S.bf=null;
+function bienTxt(q,v){if(v==null||v==="")return "—";if(q.o){const o=q.o.find(x=>String(x[0])===String(v));return o?o[1]:String(v)}if(q.libre)return String(v);return v+" de 5"}
+// Aviso: de viernes 5:00 p. m. a domingo, si falta responder (hora del teléfono)
+function bienAviso(){if(!S.bn||S.bn.no||S.bn.respuesta)return false;const d=new Date(),w=d.getDay();return (w===5&&d.getHours()>=17)||w===6||w===0}
+function marcarPend(){try{localStorage.setItem("mp1:bienPend",bienAviso()?"1":"0");window.dispatchEvent(new Event("sige:pend"))}catch(e){}}
+async function cargarBien(){
+  const ses=ses0();if(!ses)return;
+  try{const r=await llamar(ses,{op:"jugBienestar",modo:"ver"});S.bn={semana:r.semana,respuesta:r.respuesta,t:Date.now()};if(S.ses)LS.set("bien",S.bn)}
+  catch(e){if(e.code==="operacion_desconocida"||e.code==="no_aplica"||e.code==="sin_hoja_bienestar")S.bn={no:true};}
+  if(S.bn&&S.bn.semana&&S.bn.respuesta&&S.bn.semana.lunes&&new Date(S.bn.semana.cierre+"T23:59:59")<new Date())S.bn.respuesta=null;
+  marcarPend();
+  if(LS.get("abrirBien",0)&&S.bn&&!S.bn.no){LS.del("abrirBien");S.tab="prog";LS.set("tab","prog");abrirBien()}
+  else if(LS.get("abrirBien",0)&&S.bn&&S.bn.no)LS.del("abrirBien");
+  render();
+}
+function abrirBien(){const prev=S.bn&&S.bn.respuesta;S.bf={paso:0,r:prev?Object.assign({},prev):{},err:null,busy:false};if(prev)S.bf.paso=BQ.length;window.scrollTo(0,0)}
+function fechaCierre(){const c=S.bn&&S.bn.semana&&S.bn.semana.cierre;if(!c)return "";const d=new Date(c+"T12:00:00");return DIA[d.getDay()]+" "+d.getDate()+" "+MES[d.getMonth()]}
+function vBienCard(){
+  const b=S.bn;if(!b||b.no||!b.semana)return "";
+  if(b.respuesta){const d=b.respuesta.en?new Date(b.respuesta.en):null;
+    return `<section class="sec bn-card ok"><div class="sec-h" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h3 style="margin:0">Bienestar de la semana</h3><p class="hint" style="margin:4px 0 0">✅ Ya respondiste${d?" el "+esc(DIA[d.getDay()]+" "+d.getDate()+" "+MES[d.getMonth()]):""}. Puedes corregir hasta el ${esc(fechaCierre())}.</p></div><button class="btn sm" data-a="bn-abrir">Corregir</button></div>${S.bnMsg?`<div class="banner" style="margin-top:8px;background:var(--surface-2)">${esc(S.bnMsg)}</div>`:""}</section>`}
+  const av=bienAviso();
+  return `<section class="sec bn-card">${av?'<div class="banner warn" style="margin-bottom:10px"><b>Tienes pendiente el formulario de bienestar.</b> Respóndelo antes del domingo.</div>':""}<h3>Bienestar de la semana</h3><p class="hint">10 preguntas, 2 minutos. Solo lo ve el profe; tus compañeros no.</p><button class="btn pri" data-a="bn-abrir" style="width:100%;margin-top:6px">Responder</button></section>`;
+}
+function vBienForm(){
+  const f=S.bf,tot=BQ.length,fin=f.paso>=tot,q=BQ[Math.min(f.paso,tot-1)];
+  let h=`<section class="sec"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3 style="margin:0">Bienestar de la semana</h3><button class="btn sm" data-a="bn-cancelar">Cancelar</button></div>
+   <div class="bn-prog" aria-hidden="true"><i style="width:${Math.round(Math.min(f.paso,tot)/tot*100)}%"></i></div>`;
+  if(!fin){
+    h+=`<p class="hint" style="margin:0">Pregunta ${f.paso+1} de ${tot}${q.libre?" · opcional":""}</p><h2 class="bn-q">${esc(q.t)}</h2>`;
+    if(q.libre)h+=`<p class="hint">Si tienes una molestia, dinos dónde (rodilla, tobillo…).</p><textarea id="bn-l" maxlength="500" placeholder="Escribe aquí (opcional)">${esc(f.r.l||"")}</textarea><p class="hint" style="text-align:right"><span id="bn-cnt">${(f.r.l||"").length}</span>/500</p><button class="btn pri" data-a="bn-sig" style="width:100%;margin-top:8px">Siguiente</button>`;
+    else if(q.o)h+=`<div class="bn-ops">${q.o.map(([v,l])=>`<button class="bn-op" data-a="bn-op" data-v="${esc(v)}" aria-pressed="${String(f.r[q.k])===String(v)}">${esc(l)}</button>`).join("")}</div>`;
+    else h+=`<div class="bn-ops n5" role="group" aria-label="${esc(q.t)}">${[1,2,3,4,5].map(v=>`<button class="bn-op" data-a="bn-op" data-v="${v}" aria-pressed="${Number(f.r[q.k])===v}" aria-label="${v} de 5">${v}</button>`).join("")}</div><div class="bn-ext"><span>1 = ${esc(q.a)}</span><span style="text-align:right">5 = ${esc(q.b)}</span></div>`;
+    h+=`<div style="display:flex;justify-content:space-between;margin-top:14px">${f.paso>0?'<button class="btn sm" data-a="bn-atras">← Atrás</button>':"<span></span>"}</div>`;
+  }else{
+    h+=`<h2 class="bn-q">Revisa y envía</h2><p class="hint">Toca una respuesta para cambiarla.</p><div class="bn-res">${BQ.map((x,i)=>`<button data-a="bn-ir" data-v="${i}"><span>${esc(x.t)}</span><b>${esc(bienTxt(x,f.r[x.k]))}</b></button>`).join("")}</div>
+     ${f.err?`<div class="banner err">${esc(f.err)}</div>`:""}
+     <button class="btn pri" data-a="bn-enviar" style="width:100%" ${f.busy?"disabled":""}>${f.busy?"Enviando…":S.bn&&S.bn.respuesta?"Guardar corrección":"Enviar"}</button>`;
+  }
+  return h+`</section>`;
+}
+async function enviarBien(){
+  const f=S.bf;if(!f||f.busy)return;const ses=ses0();if(!ses)return;
+  const falta=BQ.find(q=>!q.libre&&(f.r[q.k]==null||f.r[q.k]===""));if(falta){f.paso=BQ.indexOf(falta);render();return}
+  f.busy=true;f.err=null;render();
+  try{const r=await llamar(ses,{op:"jugBienestar",modo:"enviar",r:{c:+f.r.c,d:+f.r.d,e:+f.r.e,f:+f.r.f,g:+f.r.g,h:f.r.h,i:+f.r.i,j:+f.r.j,k:+f.r.k,l:f.r.l||""}});
+    S.bn={semana:r.semana,respuesta:r.respuesta,t:Date.now()};if(S.ses)LS.set("bien",S.bn);S.bf=null;S.bnMsg=r.corregida?"Listo, guardamos tu corrección.":"¡Gracias! El profe ya tiene tu respuesta.";marcarPend();setTimeout(()=>{S.bnMsg=null;render()},8000)}
+  catch(e){f.busy=false;f.err=ERRB[e.code]||ERRB.red}
+  render();window.scrollTo(0,0);
+}
+function clicBien(t){
+  const a=t.dataset.a,f=S.bf;
+  if(a==="bn-abrir"){abrirBien();render();return}
+  if(!f)return;
+  if(a==="bn-cancelar"){if(Object.keys(f.r).length&&!(S.bn&&S.bn.respuesta)&&!confirm("¿Salir sin enviar? Se perderán las respuestas."))return;S.bf=null;render();return}
+  if(a==="bn-op"){const q=BQ[f.paso];f.r[q.k]=q.o?(typeof q.o[0][0]==="number"?Number(t.dataset.v):t.dataset.v):Number(t.dataset.v);render();setTimeout(()=>{if(S.bf===f&&f.paso<BQ.length){f.paso=S.bn&&S.bn.respuesta&&f.volver?BQ.length:f.paso+1;f.volver=false;render();window.scrollTo(0,0)}},180);return}
+  if(a==="bn-sig"){f.paso++;f.volver=false;render();return}
+  if(a==="bn-atras"){f.paso=Math.max(0,f.paso-1);render();return}
+  if(a==="bn-ir"){f.paso=Number(t.dataset.v);f.volver=true;render();return}
+  if(a==="bn-enviar")enviarBien();
+}
+document.addEventListener("input",ev=>{if(ev.target.id==="bn-l"&&S.bf){S.bf.r.l=ev.target.value;const c=document.getElementById("bn-cnt");if(c)c.textContent=ev.target.value.length}});
+setInterval(()=>{if(S.bn&&!S.bn.no)marcarPend()},60000);
 render();
 if(S.ses)actualizar();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});

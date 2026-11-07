@@ -532,4 +532,27 @@ document.addEventListener("click", async ev => {
   try { await gs("update_values", { range: `Calendario!A${row}:J${row}`, values: [fila] }); CAL = null; calVentana(); toast(ok); await loadAll(); }
   catch (e) { CAL.busy = false; CAL.err = "No se pudo guardar: " + gsErrorText(e) + (e && /operacion|Calendario|hoja/i.test(String(e.message || e.code || "")) ? " ¿Ya pegaste el puente v16?" : ""); calVentana(); }
 });
+
+/* ============ v4.2 · Bienestar semanal dentro de Mi progreso ============ */
+let BE = null; // estado de la pestaña Bienestar (¿vinculada a un Google Forms?)
+async function bienEstadoCargar() { if (BE && BE.cargando) return; BE = { cargando: true }; try { BE = await window.puenteDT({ op: "bienEstado" }); } catch (e) { BE = { error: true }; } render(); }
+function enlaceBien() {
+  const u = window.__acceso && window.__acceso(); if (!u || !u.url) return "";
+  const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ url: u.url }))));
+  return location.origin + "/sige-jaguares/#p=" + encodeURIComponent(tok) + "&ir=bienestar";
+}
+window.bienExtra = function (act, resp) {
+  if (!BE) setTimeout(bienEstadoCargar, 0);
+  const n = act.filter(j => resp.has(j.id)).length, link = enlaceBien();
+  return `<div class="kpis" style="margin:4px 0 10px"><div class="kpi"><b>${n}</b><span>Respondieron</span></div><div class="kpi"><b>${act.length - n}</b><span>Faltan</span></div></div>
+    ${BE && BE.vinculada ? '<div class="banner warn">La pestaña Bienestar todavía recibe respuestas de un Google Forms. Ciérralo («No aceptar respuestas») o desvincúlalo para no mezclar filas.</div>' : ""}
+    ${BE && BE.existe === false ? '<div class="banner err">No existe la pestaña «Bienestar» en la hoja.</div>' : ""}
+    ${BE && BE.error ? '<div class="banner warn">Para el formulario dentro de la app hace falta el puente v17.</div>' : ""}
+    ${link ? `<button class="btn sm" data-act="bien-copiar">Copiar enlace para WhatsApp</button> <span class="hint">Siempre es el mismo: abre Mi progreso directo en el formulario.</span>` : ""}`;
+};
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("[data-act='bien-copiar']"); if (!t) return;
+  const txt = "📋 Formulario de bienestar de la semana (Jaguares). Responde aquí, son 2 minutos: " + enlaceBien();
+  try { await navigator.clipboard.writeText(txt); toast("Enlace copiado. Pégalo en el grupo de WhatsApp."); } catch (e) { prompt("Copia este mensaje:", txt); }
+});
 })();
