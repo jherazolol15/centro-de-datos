@@ -769,3 +769,66 @@ window.calHist = function (nm) {
    <div class="rs">${L.slice(-3).reverse().map(p => `<span title="${esc(p.comp)}"><i class="${p.res}">${p.res}</i>${p.gf}-${p.gc} · ${esc(dShort(p.fecha))}</span>`).join("")}</div></div>`;
 };
 })();
+
+/* ---------- v4.5 · Metas individuales (privadas: el jugador las ve en Mi progreso; nunca van al Muro) ----------
+   Hoja «Metas»: ID meta · Jugador · ID · Área · Meta · Desde · Para · Estado · Fecha logro · Nota del DT (privada). */
+(function () {
+const AREAS_M = ["Técnica", "Táctica", "Física", "Actitud"], ESTADOS_M = ["En proceso", "Lograda", "Pausada"], MAX_ACT = 3;
+window.metasFusionar = function (r) {
+  S.metas = (r.metas || []).map((x, i) => x && x[0] && x[4] ? { row: i + 2, id: x[0], jid: x[2] || String(x[1] || "").slice(0, 3), area: x[3] || "", meta: x[4], desde: pDate(x[5]), para: pDate(x[6]), estado: x[7] || "En proceso", logro: pDate(x[8]), nota: x[9] || "" } : null).filter(Boolean);
+  S.metasFilas = (r.metas || []).length;
+};
+let MT = null;
+const col = e => /lograda/i.test(e) ? "var(--ok)" : /pausa/i.test(e) ? "var(--muted)" : "var(--sky)";
+window.metasFicha = function (j) {
+  const L = (S.metas || []).filter(m => m.jid === j.id && !/archiv/i.test(m.estado));
+  const act = L.filter(m => /proceso/i.test(m.estado)).length;
+  return `<section class="sec" id="metas"><div class="sec-h"><h3>Metas</h3>${act < MAX_ACT ? `<button class="btn sm pri" data-act="mt-nueva" data-id="${esc(j.id)}">Nueva meta</button>` : `<span class="hint">${MAX_ACT} activas (máximo)</span>`}</div>
+   ${L.length ? `<div class="list">${L.map(m => `<button class="li" data-act="mt-editar" data-row="${m.row}" style="text-align:left;width:100%"><span style="width:10px;height:10px;border-radius:50%;background:${col(m.estado)};flex:none"></span><span class="nm" style="flex:1"><b>${esc(m.meta)}</b><br><span class="hint">${esc([m.area, m.estado + (m.logro ? " " + dShort(m.logro) : ""), m.para ? "para el " + dShort(m.para) : ""].filter(Boolean).join(" · "))}</span>${m.nota ? `<br><span class="hint">📝 ${esc(m.nota)}</span>` : ""}</span></button>`).join("")}</div>` : '<p class="empty">Sin metas. Acuerda con el jugador hasta 3 metas concretas; las verá en Mi progreso.</p>'}
+   <p class="hint">Son privadas: solo las ven el jugador y su familia en Mi progreso (la nota es solo tuya). No se publican en el Muro.</p></section>`;
+};
+function ventana() {
+  let el = document.getElementById("mt-ovl");
+  if (!MT) { if (el) el.remove(); document.body.style.overflow = ""; return; }
+  if (!el) { el = document.createElement("div"); el.id = "mt-ovl"; el.className = "ovl"; document.body.appendChild(el); document.body.style.overflow = "hidden"; }
+  const m = MT.m, iso = d => d ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") : "";
+  el.innerHTML = `<div class="box" role="dialog" aria-label="Meta"><div class="sec-h"><h2>${m.row ? "Editar meta" : "Nueva meta"}</h2><button class="btn sm" data-act="mt-cerrar">Cerrar</button></div>
+   <p class="hint" style="margin-top:0">${esc(shortName((jById(m.jid) || {}).nombre || ""))}</p>
+   <div class="fgrid">
+    <label class="f">Área<select id="mt-area">${AREAS_M.map(x => `<option ${x === m.area ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+    <label class="f">Para (opcional)<input type="date" id="mt-para" value="${iso(m.para)}"></label>
+    <label class="f" style="grid-column:1/-1">Meta<input id="mt-meta" maxlength="120" value="${esc(m.meta || "")}" placeholder="Ej. Controlar orientado con la pierna izquierda"></label>
+    ${m.row ? `<label class="f" style="grid-column:1/-1">Estado<select id="mt-estado">${ESTADOS_M.map(x => `<option ${x === m.estado ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}
+    <label class="f" style="grid-column:1/-1">Nota privada (solo para ti)<input id="mt-nota" maxlength="200" value="${esc(m.nota || "")}"></label>
+   </div>
+   ${MT.err ? `<div class="banner err">${esc(MT.err)}</div>` : ""}
+   <button class="btn pri wide" data-act="mt-guardar" ${MT.busy ? "disabled" : ""}>${MT.busy ? "Guardando…" : "Guardar"}</button>
+   ${m.row ? `<button class="linkbtn" data-act="mt-archivar" ${MT.busy ? "disabled" : ""} style="color:var(--danger)">Quitar meta</button>` : ""}</div>`;
+}
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("[data-act^='mt-']"); if (!t) return;
+  const a = t.dataset.act, $v = id => { const x = document.getElementById(id); return x ? String(x.value || "").trim() : ""; };
+  if (a === "mt-nueva") { MT = { m: { jid: t.dataset.id, area: AREAS_M[0], estado: "En proceso" } }; ventana(); return; }
+  if (a === "mt-editar") { const m = (S.metas || []).find(x => x.row === +t.dataset.row); if (m) { MT = { m: Object.assign({}, m) }; ventana(); } return; }
+  if (a === "mt-cerrar") { MT = null; ventana(); return; }
+  if (!MT || MT.busy) return;
+  if (!navigator.onLine) { MT.err = "Se necesita señal para guardar la meta."; ventana(); return; }
+  const m = MT.m, j = jById(m.jid); if (!j) return;
+  const isoHoy = todayISO();
+  let est = m.row ? ($v("mt-estado") || m.estado) : "En proceso", fila, ok;
+  if (a === "mt-archivar") { if (!confirm("¿Quitar esta meta? El jugador dejará de verla.")) return; est = "Archivada"; }
+  else if (a !== "mt-guardar") return;
+  const meta = a === "mt-archivar" ? m.meta : $v("mt-meta");
+  if (!meta) { MT.err = "Escribe la meta."; ventana(); return; }
+  if (/proceso/i.test(est) && !/proceso/i.test(m.estado || "x") && (S.metas || []).filter(x => x.jid === j.id && /proceso/i.test(x.estado)).length >= MAX_ACT) { MT.err = "Ya tiene " + MAX_ACT + " metas en proceso."; ventana(); return; }
+  const iso = d => d ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") : "";
+  const para = a === "mt-archivar" ? iso(m.para) : $v("mt-para");
+  const logro = /lograda/i.test(est) ? (m.logro && /lograda/i.test(m.estado) ? iso(m.logro) : isoHoy) : "";
+  fila = [m.id || "M" + Date.now().toString(36), j.label, j.id, a === "mt-archivar" ? m.area : ($v("mt-area") || AREAS_M[0]), meta.slice(0, 120), dateFormula(m.desde ? iso(m.desde) : isoHoy), para ? dateFormula(para) : "", est, logro ? dateFormula(logro) : "", a === "mt-archivar" ? m.nota : $v("mt-nota").slice(0, 200)];
+  ok = a === "mt-archivar" ? "Meta quitada." : /lograda/i.test(est) && !/lograda/i.test(m.estado || "") ? "¡Meta lograda! El jugador la verá en Mi progreso." : m.row ? "Meta actualizada." : "Meta creada.";
+  const row = m.row || (2 + (S.metasFilas || 0));
+  MT.busy = true; MT.err = null; ventana();
+  try { await gs("update_values", { range: `Metas!A${row}:J${row}`, values: [fila] }); MT = null; ventana(); toast(ok); await loadAll(); }
+  catch (e) { MT.busy = false; MT.err = "No se pudo guardar: " + gsErrorText(e) + " ¿Ya pegaste el puente v19?"; ventana(); }
+});
+})();

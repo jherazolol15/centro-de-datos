@@ -169,6 +169,7 @@ select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:va
 .mt-top ol{margin:4px 0 0;padding-left:18px;font-size:.86rem}.mt-top li{margin:2px 0}.mt-top li.yo{font-weight:800;color:var(--accent)}
 .mt-top li span{color:var(--muted);margin-left:4px}
 .mp-hist{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}.mp-rs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.mp-rs span{border-radius:8px;padding:4px 8px;font-size:.8rem;font-weight:700;background:var(--surface-2)}.mp-rs i{font-style:normal;display:inline-block;min-width:18px;text-align:center;border-radius:5px;color:#fff;margin-right:5px}.mp-rs .rG{background:#1f8a4c}.mp-rs .rE{background:#C98A00}.mp-rs .rP{background:#C3352B}
+.mm{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--border)}.mm:first-of-type{border-top:0}.mm .ic{font-size:1.4rem;line-height:1}.mm.ok b{color:#1f8a4c}.mm.pa{opacity:.6}
 </style>
 </head><body>
 <header class="top"><div class="top-in"><span id="crest"></span><div class="t"><b>Mi progreso</b><span id="club"></span></div></div></header>
@@ -242,6 +243,22 @@ function mpHist(d,p){const k=rivKey(p.rival);if(!k)return "";
   if(!L.length)return `<p class="hint" style="margin:10px 0 0">Primer partido contra ${esc(p.rival)}.</p>`;
   const r=x=>n(x.gf)>n(x.gc)?"G":n(x.gf)<n(x.gc)?"P":"E",c=t=>L.filter(x=>r(x)===t).length,gf=L.reduce((a,x)=>a+n(x.gf),0),gc=L.reduce((a,x)=>a+n(x.gc),0);
   return `<div class="mp-hist"><div class="sec-h"><b>Historial vs ${esc(p.rival)}</b><span class="hint">${L.length} PJ · ${c("G")}G ${c("E")}E ${c("P")}P · goles ${gf}-${gc}</span></div><div class="mp-rs">${L.slice(-3).reverse().map(x=>`<span><i class="r${r(x)}">${r(x)}</i>${esc(x.gf)}-${esc(x.gc)} · ${esc(dS(pD(x.fecha)))}</span>`).join("")}</div></div>`}
+
+/* ---------- v4.5 · Mis metas (privadas) y Mi bienestar en el tiempo (solo el propio) ---------- */
+function vMisMetas(d){const L=d.metas;if(!L)return "";
+  const ic={"Técnica":"⚽","Táctica":"🧠","Física":"💪","Actitud":"🔥"},ord=x=>/proceso/i.test(x.estado)?0:/lograda/i.test(x.estado)?1:2;
+  return `<section class="sec"><div class="sec-h"><h3>Mis metas</h3>${L.filter(x=>/lograda/i.test(x.estado)).length?`<span class="chip ok">🎯 ${L.filter(x=>/lograda/i.test(x.estado)).length} lograda${L.filter(x=>/lograda/i.test(x.estado)).length>1?"s":""}</span>`:""}</div>${L.length?L.slice().sort((a,b)=>ord(a)-ord(b)).map(m=>`<div class="mm ${/lograda/i.test(m.estado)?"ok":/pausa/i.test(m.estado)?"pa":""}"><span class="ic" aria-hidden="true">${/lograda/i.test(m.estado)?"🎯":ic[m.area]||"⭐"}</span><span style="flex:1"><b>${esc(m.meta)}</b><br><span class="hint">${esc([m.area,/lograda/i.test(m.estado)?"¡Lograda"+(pD(m.logro)?" el "+dS(pD(m.logro)):"")+"!":m.estado,!/lograda/i.test(m.estado)&&pD(m.para)?"para el "+dS(pD(m.para)):""].filter(Boolean).join(" · "))}</span></span></div>`).join(""):'<p class="empty">Tu entrenador aún no te ha asignado metas.</p>'}<p class="hint" style="margin-top:8px">Las acuerdas con tu entrenador. Solo las ves tú.</p></section>`}
+function vMiBien(d){const L=(d.bienHist||[]).filter(x=>x.idx!=null||x.horas!=null);if(!d.bienHist||L.length<2)return "";
+  const W=300,H=110,P=14,n=L.length,X=i=>P+10+i*(W-2*P-20)/(n-1),Y=v=>12+(H-40)*(1-Math.max(0,Math.min(100,v))/100);
+  const pts=L.map((x,i)=>x.idx!=null?X(i)+","+Y(x.idx):null).filter(Boolean);
+  let g=`<line x1="${P}" x2="${W-P}" y1="${Y(60)}" y2="${Y(60)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>`+(pts.length>1?`<polyline points="${pts.join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`:"");
+  L.forEach((x,i)=>{if(x.idx!=null)g+=`<circle cx="${X(i)}" cy="${Y(x.idx)}" r="4.5" fill="${x.idx<60?"#C3352B":"var(--accent)"}"/>`;g+=`<text x="${X(i)}" y="${H-6}" text-anchor="middle" style="font-size:10px;fill:var(--muted)">${esc(dS(pD(x.fecha)).replace(/ .*/,"")+"/"+((pD(x.fecha)||new Date()).getMonth()+1))}</text>`});
+  const hs=L.map(x=>x.horas).filter(v=>v!=null),ph=hs.length?hs.reduce((a,b)=>a+b,0)/hs.length:null,u=L[L.length-1];
+  const tip=ph!=null&&ph<8?"Estás durmiendo en promedio "+f1(ph)+" horas. A tu edad se recomiendan entre 8 y 10 horas: el descanso también es entrenamiento.":u.mol&&!/^ninguna/i.test(u.mol)?"Reportaste molestias la última semana. Cuéntale a tu entrenador cómo sigues.":u.idx!=null&&u.idx<60?"Tu última semana fue exigente. Descansa, hidrátate y come bien.":"¡Vas bien! Mantén tus rutinas de sueño, alimentación e hidratación.";
+  return `<section class="sec"><div class="sec-h"><h3>Mi bienestar</h3><span class="hint">últimas ${L.length} semanas · solo tú lo ves</span></div>
+   ${pts.length?`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Tu índice de bienestar por semana">${g}</svg><div class="legend"><span><i style="background:var(--accent)"></i>Índice de bienestar</span><span class="hint">línea punteada: 60</span></div>`:""}
+   ${hs.length?`<div class="kpis" style="margin-top:8px"><div class="kpi"><b>${f1(ph)} h</b><span>Sueño promedio</span></div><div class="kpi"><b>${u.idx!=null?Math.round(u.idx):"–"}</b><span>Último índice</span></div><div class="kpi"><b>${u.animo!=null?f1(u.animo):"–"}</b><span>Último ánimo</span></div></div>`:""}
+   <div class="mt-msg">${esc(tip)}</div></section>`}
 function pD(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s||""));return m?new Date(+m[3],+m[2]-1,+m[1]):null}
 function dL(d){return d?d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear():""}
 function dS(d){return d?d.getDate()+" "+MES[d.getMonth()]:""}
@@ -263,7 +280,7 @@ async function llamar(ses,body){
 }
 function pedir(ses,sinFotos){return llamar(ses,{op:"jugDatos",sinFotos:!!sinFotos})}
 function guardar(r,recordar){
-  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,proximos:r.proximos||null,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,testsEquipo:r.testsEquipo||null,evaluaciones:r.evaluaciones};S.stamp=Date.now();
+  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,proximos:r.proximos||null,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,testsEquipo:r.testsEquipo||null,metas:r.metas||null,bienHist:r.bienHist||null,evaluaciones:r.evaluaciones};S.stamp=Date.now();
   if(r.fotos){S.fotos=r.fotos}
   if(recordar){LS.set("datos",S.d);LS.set("stamp",S.stamp);if(r.fotos)LS.set("fotos",r.fotos)}
 }
@@ -330,6 +347,8 @@ function vDatos(){
    <div class="legend">${["Presente","Ausente","Justificado","Lesionado"].map(a=>`<span><i class="c-${a}"></i>${a}</span>`).join("")}</div>`:'<p class="empty">Aún no hay entrenamientos registrados.</p>'}</section>`;
   // Tests (v4.3): nivel, puesto, medallas y mensaje. El puente solo envía la media, el podio y los que más mejoraron.
   h+=d.testsEquipo?vMisTests(d):vMisTestsV17(d);
+  h+=vMisMetas(d);
+  h+=vMiBien(d);
   // Evaluación
   const ev=(d.evaluaciones||[]).slice().sort((a,b)=>(pD(a.fecha)||0)-(pD(b.fecha)||0)),e=ev[ev.length-1];
   const AR=[["tecnico","Técnico"],["tactico","Táctico"],["fisico","Físico"],["psicosocial","Actitud"]];
