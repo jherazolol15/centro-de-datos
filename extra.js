@@ -63,6 +63,7 @@ const st = document.createElement("style"); st.textContent = css; document.head.
 /* ---------- Librerías del PDF (se guardan en el teléfono para usarlas sin señal) ---------- */
 const LIBS = { h2c: ["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", () => window.html2canvas], pdf: ["https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", () => window.jspdf && window.jspdf.jsPDF] };
 const cargando = {};
+window.__cddLib = k => lib(k);
 function lib(k) {
   const [url, ok] = LIBS[k];
   if (ok()) return Promise.resolve();
@@ -554,5 +555,192 @@ document.addEventListener("click", async ev => {
   const t = ev.target.closest("[data-act='bien-copiar']"); if (!t) return;
   const txt = "📋 Formulario de bienestar de la semana (Jaguares). Respóndelo HOY VIERNES, después del entrenamiento (se recibe hasta el sábado). Son 2 minutos: " + enlaceBien();
   try { await navigator.clipboard.writeText(txt); toast("Enlace copiado. Pégalo en el grupo de WhatsApp."); } catch (e) { prompt("Copia este mensaje:", txt); }
+});
+})();
+
+/* ---------- v4.3 · Tests físicos: informe gráfico (podio, mejoras, niveles, ranking, líneas, alertas, imagen) ---------- */
+(function () {
+const cssT = `
+.tst-pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;text-align:center;margin-top:6px}
+.tst-pod .nm{font-weight:700;font-size:.86rem;line-height:1.15;overflow-wrap:normal;word-break:normal}
+.tst-pod .vv{color:var(--muted);font-size:.82rem;margin:2px 0 4px}
+.tst-pod .bl{border-radius:8px 8px 0 0;color:#fff;font-family:var(--display);font-weight:800;font-size:1.3rem;padding-top:6px}
+.tst-niv{display:flex;height:22px;border-radius:8px;overflow:hidden;gap:2px;margin:6px 0 8px}
+.tst-niv button{border:0;padding:0;min-width:0;cursor:pointer}
+.tst-lg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;font-size:.84rem}
+.tst-lg button{display:flex;align-items:center;gap:6px;background:none;border:0;padding:4px 0;text-align:left;color:var(--ink)}
+.tst-lg button[aria-pressed="true"]{font-weight:700}
+.tst-lg i,.tst-dot{width:10px;height:10px;border-radius:3px;flex:none;display:inline-block}
+.tst-rk{display:flex;flex-direction:column;gap:8px}
+.tst-rk a{text-decoration:none;color:inherit}
+.tst-rk .lb{display:flex;justify-content:space-between;gap:8px;font-size:.92rem}
+.tst-rk .tr{position:relative;height:9px;background:var(--surface-2);border-radius:5px;margin-top:3px}
+.tst-rk .tr i{display:block;height:9px;border-radius:5px}
+.tst-rk .md{position:absolute;top:-4px;width:2px;height:17px;background:var(--ink);opacity:.55}
+.tst-db{position:relative;height:16px;margin:2px 0 4px}
+.tst-db .ln{position:absolute;top:7px;height:2px;background:var(--sky)}
+.tst-db .pt{position:absolute;top:3px;width:10px;height:10px;border-radius:50%;margin-left:-5px}
+.tst-al{border-left:4px solid var(--warn);border-radius:0;padding:4px 0 4px 10px;margin:6px 0}
+.tst-msg{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:.92rem}
+`;
+const stT = document.createElement("style"); stT.textContent = cssT; document.head.appendChild(stT);
+
+const NIV = [["Excelente", "var(--ok)"], ["Bueno", "var(--sky)"], ["Regular", "var(--warn)"], ["A mejorar", "var(--danger)"]];
+const nivCol = n => (NIV.find(x => x[0] === n) || [0, "var(--accent)"])[1];
+// Mismas reglas que el puente (testsEquipo_ en Code.gs)
+function tstNivel(puesto, n) { if (n < 6 || !puesto) return ""; const f = (puesto - 1) / n; return f < 0.25 ? "Excelente" : f < 0.5 ? "Bueno" : f < 0.75 ? "Regular" : "A mejorar"; }
+window.tstNivel = tstNivel;
+const LINEAS = [["por", "Porteros"], ["def", "Defensas"], ["med", "Medios"], ["del", "Delanteros"]];
+const ALERTA = 0.05;
+S.tstToma = S.tstToma || {}; S.tstNiv = "";
+
+function fechaToma(test, toma) { let f = null; S.tests.forEach(t => { if (t.test === test && t.toma === toma && t.f && (!f || t.f > f)) f = t.f; }); return f; }
+function datos(test) {
+  const m = testMeta(test), menor = m.mejor === "Menor";
+  const tomas = tomasOf(test).map(tk => {
+    const arr = S.jug.map(j => ({ j, v: (tomaVals(j.id, test)[tk] || {}).res })).filter(x => x.v != null).sort((a, b) => menor ? a.v - b.v : b.v - a.v);
+    arr.forEach(x => { x.p = 1 + arr.filter(y => menor ? y.v < x.v : y.v > x.v).length; x.nivel = tstNivel(x.p, arr.length); });
+    return { toma: tk, arr, n: arr.length, media: arr.length ? arr.reduce((s, x) => s + x.v, 0) / arr.length : null, fecha: fechaToma(test, tk) };
+  });
+  tomas.forEach((k, i) => { const a = i ? tomas[i - 1] : null; k.ant = a; k.arr.forEach(x => { const y = a && a.arr.find(z => z.j.id === x.j.id); x.ant = y ? y.v : null; x.mej = y ? improve(test, y.v, x.v) : null; }); });
+  return { m, menor, tomas };
+}
+window.tstDatos = datos;
+const pct = p => (p >= 0 ? "+" : "−") + Math.abs(Math.round(p * 100)) + "%";
+function difTxt(a, b, m) { // cambio de la media: texto «mejor/peor»
+  if (a == null || b == null) return ""; const d = b - a, mej = m.mejor === "Menor" ? d < 0 : d > 0;
+  if (Math.abs(d) < 1e-9) return '<span class="hint">igual que la toma anterior</span>';
+  const v = m.u === "s" && Math.abs(d) >= 60 ? fmtV(Math.abs(d), m.u) + " min" : fmtR(Math.round(Math.abs(d) * 10) / 10) + " " + m.u;
+  return `<span style="color:var(--${mej ? "ok" : "danger"});font-weight:700">${mej ? "▲" : "▼"} ${esc(v)} ${mej ? "mejor" : "peor"}</span><span class="hint"> que la toma anterior</span>`;
+}
+function escala(vals, menor) { const mn = Math.min(...vals), mx = Math.max(...vals); return v => mx === mn ? 50 : 6 + 88 * (menor ? (mx - v) / (mx - mn) : (v - mn) / (mx - mn)); }
+function contexto(j, f) {
+  const out = [], lim = f ? f.getTime() - 14 * 864e5 : 0, B = S.bien.filter(b => b.jid === j.id && (!f || (b.f.getTime() >= lim && b.f.getTime() <= f.getTime() + 864e5)));
+  if (B.some(b => b.idx != null && b.idx < (S.config.bienBajo || 60))) out.push("bienestar bajo");
+  if (B.some(b => b.mol && !/^ninguna/i.test(b.mol))) out.push("reportó molestias");
+  try { const s = semaforo(j); if (s && s.acwr != null && s.acwr > (S.config.acwrHi || 1.5)) out.push("carga alta (ACWR " + fmtR(s.acwr) + ")"); } catch (e) {}
+  return out;
+}
+
+window.tstVista = function () {
+  let h = `${subnav(SUBS, "tests")}<h2>Tests físicos</h2>`;
+  const tp = testsPresent();
+  if (!tp.length) return h + `<section class="sec">${pendingBox("Pendiente", "Aún no hay tests registrados. Cuando tomes el primero verás el podio, los niveles del equipo, el ranking y quiénes más mejoraron.", btnLink("#reg-test", "Registrar un test", true))}</section>`;
+  if (!tp.includes(S.testSel)) S.testSel = tp[0];
+  const test = S.testSel, D = datos(test), m = D.m;
+  const tk = D.tomas.some(k => k.toma === S.tstToma[test]) ? S.tstToma[test] : D.tomas[D.tomas.length - 1].toma;
+  const K = D.tomas.find(k => k.toma === tk), ant = K.ant, arr = K.arr;
+  h += `<div class="chips">${tp.map(t => `<button class="fchip" data-act="t3-test" data-v="${esc(t)}" aria-pressed="${t === test}">${esc(t)}</button>`).join("")}</div>`;
+  if (D.tomas.length > 1) h += `<div class="chips" role="group" aria-label="Toma">${D.tomas.map(k => `<button class="fchip" data-act="tst-toma" data-v="${esc(k.toma)}" aria-pressed="${k.toma === tk}">${esc(k.toma)}</button>`).join("")}</div>`;
+  const act = activePl(), sin = act.filter(j => !arr.some(x => x.j.id === j.id));
+  const uTxt = m.u === "s" && arr.some(x => x.v >= 60) ? "min:s" : m.u;
+  // 1. Resumen
+  h += `<section class="sec"><div class="sec-h"><h3>${esc(test)} · ${esc(tk)}</h3><span class="hint">${esc(uTxt)} · mejor si es ${esc(String(m.mejor || "").toLowerCase())}${K.fecha ? " · " + esc(dLong(K.fecha)) : ""}</span></div>
+   <div class="kpis"><div class="kpi"><b>${fmtV(K.media, m.u)}</b><span>Media del equipo</span></div><div class="kpi"><b>${K.n}${act.length ? `<small style="font-size:.55em"> de ${act.length}</small>` : ""}</b><span>Evaluados</span></div><div class="kpi"><b>${arr.length ? fmtV(arr[0].v, m.u) : "–"}</b><span>Mejor marca</span></div></div>
+   ${ant ? `<p style="margin:8px 0 0">${difTxt(ant.media, K.media, m)}</p>` : ""}
+   ${sin.length ? `<p class="hint" style="margin:8px 0 4px">Sin test en esta toma (${sin.length}):</p><div class="row">${sin.map(j => `<span class="chip ina" style="text-transform:none;font-size:.8rem">${esc(shortName(j.nombre))}</span>`).join("")}</div>` : ""}
+   <button class="btn sm" data-act="tst-img" style="margin-top:10px;align-self:flex-start">Imagen para el grupo</button></section>`;
+  // 2. Podio y 3. Más mejoraron
+  const pod = arr.filter(x => x.p <= 3).slice(0, 3), ord = [pod[1], pod[0], pod[2]], alto = [70, 96, 52], col = ["#5BA9DC", "#1874B0", "#8CC8EA"];
+  h += `<div class="cols"><section class="sec"><h3>Podio</h3>${pod.length ? `<div class="tst-pod">${ord.map((x, i) => x ? `<a href="#jugador-${x.j.id}" style="text-decoration:none;color:inherit"><div class="nm">${esc(shortName(x.j.nombre))}</div><div class="vv">${esc(fmtT(x.v, m.u))}</div><div class="bl" style="height:${alto[i]}px;background:${col[i]}">${x.p}</div></a>` : "<div></div>").join("")}</div>` : '<p class="empty">Sin resultados.</p>'}</section>`;
+  const mj = arr.filter(x => x.mej != null && x.mej > 0).sort((a, b) => b.mej - a.mej).slice(0, 3);
+  if (ant) {
+    const sc = escala([...arr.map(x => x.v), ...ant.arr.map(x => x.v)], D.menor);
+    h += `<section class="sec"><div class="sec-h"><h3>Más mejoraron</h3><span class="hint">${esc(ant.toma)} → ${esc(tk)}</span></div>${mj.length ? mj.map(x => `<div><div class="lb" style="display:flex;justify-content:space-between"><a href="#jugador-${x.j.id}" style="color:inherit;font-weight:600;text-decoration:none">${esc(shortName(x.j.nombre))}</a><b style="color:var(--ok)">${pct(x.mej)}</b></div>
+       <div class="tst-db" aria-label="${esc(fmtT(x.ant, m.u) + " a " + fmtT(x.v, m.u))}"><span class="ln" style="left:${Math.min(sc(x.ant), sc(x.v))}%;width:${Math.abs(sc(x.v) - sc(x.ant))}%"></span><span class="pt" style="left:${sc(x.ant)}%;background:var(--surface-2);border:2px solid var(--sky)"></span><span class="pt" style="left:${sc(x.v)}%;background:var(--accent)"></span></div>
+       <div class="hint" style="font-size:.8rem">${esc(fmtT(x.ant, m.u))} → ${esc(fmtT(x.v, m.u))}</div></div>`).join("") + '<p class="hint" style="margin-top:8px">Punto vacío: toma anterior · punto lleno: esta toma. Hacia la derecha es mejor.</p>' : '<p class="empty">Nadie mejoró frente a la toma anterior.</p>'}</section>`;
+  } else h += `<section class="sec"><h3>Más mejoraron</h3><p class="empty">Aparece desde la segunda toma (${esc(test)} T2).</p></section>`;
+  h += `</div>`;
+  // 4. Niveles
+  if (K.n >= 6) {
+    const cnt = NIV.map(([n]) => arr.filter(x => x.nivel === n));
+    const sel = NIV.some(x => x[0] === S.tstNiv) ? S.tstNiv : "";
+    h += `<section class="sec"><div class="sec-h"><h3>Niveles del equipo</h3><span class="hint">comparado con el propio equipo</span></div>
+     <div class="tst-niv">${NIV.map(([n, c], i) => cnt[i].length ? `<button data-act="tst-niv" data-v="${n}" style="flex:${cnt[i].length};background:${c}" aria-label="${n}: ${cnt[i].length}"></button>` : "").join("")}</div>
+     <div class="tst-lg">${NIV.map(([n, c], i) => `<button data-act="tst-niv" data-v="${n}" aria-pressed="${sel === n}"><i style="background:${c}"></i>${n} · ${cnt[i].length}</button>`).join("")}</div>
+     ${sel ? `<div class="row" style="margin-top:8px">${cnt[NIV.findIndex(x => x[0] === sel)].map(x => `<span class="chip" style="text-transform:none;font-size:.8rem">${esc(shortName(x.j.nombre))}</span>`).join("") || '<span class="hint">Nadie en este nivel.</span>'}</div>` : '<p class="hint" style="margin:6px 0 0">Toca un nivel para ver quiénes están. Excelente: el 25 % mejor del equipo; A mejorar: el 25 % que más debe trabajar.</p>'}</section>`;
+  }
+  // 5. Ranking
+  const sc2 = escala(arr.map(x => x.v), D.menor), mdx = K.media != null ? sc2(K.media) : null;
+  h += `<div class="cols"><section class="sec"><div class="sec-h"><h3>Ranking · ${esc(tk)}</h3><span class="hint">línea: media ${esc(fmtT(K.media, m.u))}</span></div><div class="tst-rk">${arr.map(x => `<a href="#jugador-${x.j.id}"><div class="lb"><span>${x.p}. ${esc(shortName(x.j.nombre))} <span class="hint ab">${esc(POS_AB[x.j.pos1] || "")}</span></span><span class="num">${esc(fmtT(x.v, m.u))}</span></div><div class="tr"><i style="width:${Math.max(4, sc2(x.v))}%;background:${x.nivel ? nivCol(x.nivel) : "var(--accent)"}"></i>${mdx != null ? `<span class="md" style="left:${mdx}%"></span>` : ""}</div></a>`).join("")}</div></section>`;
+  // 6. Media por línea
+  const L = LINEAS.map(([g, t]) => { const a = arr.filter(x => posGroup(x.j.pos1) === g); return { t, n: a.length, v: a.length ? a.reduce((s, x) => s + x.v, 0) / a.length : null }; }).filter(x => x.n);
+  const sc3 = L.length ? escala([...L.map(x => x.v), ...arr.map(x => x.v)], D.menor) : null;
+  h += `<section class="sec"><h3>Media por línea</h3>${L.length ? `<div class="tst-rk">${L.map(x => `<div><div class="lb"><span>${x.t} <span class="hint">${x.n} jug.</span></span><span class="num">${esc(fmtT(x.v, m.u))}</span></div><div class="tr"><i style="width:${Math.max(4, sc3(x.v))}%;background:var(--accent)"></i>${mdx != null ? `<span class="md" style="left:${sc3(K.media)}%"></span>` : ""}</div></div>`).join("")}</div><p class="hint" style="margin-top:8px">Barra más larga = mejor resultado. La línea es la media del equipo.</p>` : '<p class="empty">Falta la posición de los jugadores.</p>'}`;
+  // 7. Evolución y alertas
+  if (D.tomas.length > 1) h += `<span class="hint" style="display:block;margin-top:12px">Media del equipo por toma</span>` + colBars(D.tomas.map(k => ({ x: k.toma, v: k.media || 0, t: fmtV(k.media, m.u), s: k.n + " jug.", c: k.toma === tk ? "var(--accent)" : "var(--sky)" })), { aria: "Media del equipo por toma", h: 150 });
+  h += `</section></div>`;
+  const al = arr.filter(x => x.mej != null && x.mej < -ALERTA).sort((a, b) => a.mej - b.mej);
+  if (ant) h += `<section class="sec"><div class="sec-h"><h3>Revisar</h3><span class="hint">empeoraron más del ${ALERTA * 100} %</span></div>${al.length ? al.map(x => { const c = contexto(x.j, K.fecha); return `<div class="tst-al"><a href="#jugador-${x.j.id}" style="color:inherit;font-weight:700;text-decoration:none">${esc(shortName(x.j.nombre))}</a> <b style="color:var(--danger)">${pct(x.mej)}</b><div class="hint">${esc(fmtT(x.ant, m.u))} → ${esc(fmtT(x.v, m.u))}${c.length ? " · " + esc(c.join(" · ")) : ""}</div></div>`; }).join("") + '<p class="hint">Es un aviso para conversar con el jugador: puede ser cansancio, sueño, molestias o un mal día.</p>' : '<p class="empty">Nadie empeoró más del 5 % frente a la toma anterior.</p>'}</section>`;
+  return h;
+};
+
+// Ficha del jugador: una tarjeta por test con su evolución, nivel, puesto y mejora
+function linea(vals, menor, u) {
+  const W = 300, H = 92, L = 8, R = 8, T = 18, B = 22, n = vals.length, v = vals.map(x => x.v);
+  const mn = Math.min(...v), mx = Math.max(...v), y = a => mx === mn ? (T + H - B) / 2 : T + (H - T - B) * (menor ? (a - mn) / (mx - mn) : (mx - a) / (mx - mn));
+  const x = i => n === 1 ? W / 2 : L + 14 + i * (W - L - R - 28) / (n - 1);
+  let g = `<polyline points="${vals.map((p, i) => x(i) + "," + y(p.v)).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  vals.forEach((p, i) => { g += `<circle cx="${x(i)}" cy="${y(p.v)}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text x="${x(i)}" y="${y(p.v) - 9}" text-anchor="middle" style="font-size:11px;font-weight:700;fill:var(--ink)">${esc(fmtV(p.v, u))}</text><text x="${x(i)}" y="${H - 5}" text-anchor="middle" style="font-size:11px;fill:var(--muted)">${esc(p.t)}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolución por toma">${g}</svg>`;
+}
+window.tstFicha = function (j) {
+  const tl = testsPresent().filter(t => S.tests.some(x => x.jid === j.id && x.test === t));
+  if (!tl.length) return `<section class="sec"><h3>Tests físicos</h3>${pendingBox("Pendiente", "Este jugador aún no tiene tests registrados.")}</section>`;
+  return `<section class="sec"><h3>Tests físicos</h3>${tl.map(t => {
+    const D = datos(t), m = D.m, mios = D.tomas.map(k => ({ k, x: k.arr.find(z => z.j.id === j.id) })).filter(o => o.x), u = mios[mios.length - 1], x = u.x;
+    const c = x.mej != null && x.mej < -ALERTA ? contexto(j, u.k.fecha) : null;
+    return `<div style="padding:8px 0;border-top:1px solid var(--border)"><div class="sec-h"><b>${esc(t)}</b><span class="hint">${esc(u.k.toma)} · puesto ${x.p} de ${u.k.n}</span></div>
+     <div class="row" style="gap:6px;align-items:center">${x.nivel ? `<span class="chip" style="text-transform:none;background:${nivCol(x.nivel)};color:#fff">${x.nivel}</span>` : ""}<b>${esc(fmtT(x.v, m.u))}</b>${x.mej != null ? `<b style="color:var(--${x.mej >= 0 ? "ok" : "danger"})">${pct(x.mej)}</b><span class="hint">vs ${esc(u.k.ant.toma)}</span>` : ""}<span class="hint">· media ${esc(fmtT(u.k.media, m.u))}</span></div>
+     ${c ? `<div class="tst-al"><b>Revisar:</b> empeoró ${pct(-x.mej).slice(1)}${c.length ? " · " + esc(c.join(" · ")) : ""}</div>` : ""}
+     ${mios.length > 1 ? linea(mios.map(o => ({ v: o.x.v, t: o.k.toma })), D.menor, m.u) + '<p class="hint" style="margin:0">Arriba es mejor.</p>' : ""}</div>`;
+  }).join("")}</section>`;
+};
+
+// Imagen para el grupo de WhatsApp: podio y los que más mejoraron (solo reconocimiento positivo)
+function marco(html) {
+  return new Promise(res => {
+    const D = window.document, f = D.createElement("iframe"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1;
+    f.style.cssText = "position:fixed;left:-12000px;top:0;width:560px;height:1400px;border:0";
+    f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap"></head><body style="margin:0">' + html + "</body></html>";
+    f.onload = () => res(f); D.body.appendChild(f);
+  });
+}
+function htmlImagen(test, tk) {
+  const D = datos(test), m = D.m, K = D.tomas.find(k => k.toma === tk), arr = K.arr, pod = arr.filter(x => x.p <= 3).slice(0, 3);
+  const mj = K.ant ? arr.filter(x => x.mej != null && x.mej > 0).sort((a, b) => b.mej - a.mej).slice(0, 3) : [];
+  const club = (S.config && (S.config["Ficha · Nombre"] || S.config.club)) || "Jaguares de Córdoba";
+  const F = "font-family:'Barlow',Arial,sans-serif", Dp = "font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif";
+  const ord = [pod[1], pod[0], pod[2]], alto = [118, 160, 92], col = ["#5BA9DC", "#1874B0", "#8CC8EA"], med = ["#B9C3CC", "#E7B416", "#C98A5A"];
+  return `<div id="img" style="width:540px;background:#F7FBFE;${F};color:#0E2A40">
+   <div style="background:#0B4F7C;color:#fff;padding:26px 28px 22px"><div style="${Dp};font-weight:600;letter-spacing:.14em;font-size:15px;opacity:.85;text-transform:uppercase">${esc(club)} · Tests físicos</div>
+   <div style="${Dp};font-weight:800;font-size:44px;line-height:1;margin-top:6px;text-transform:uppercase">${esc(test)}</div><div style="font-size:16px;margin-top:6px;opacity:.9">${esc(tk)}${K.fecha ? " · " + esc(dLong(K.fecha)) : ""} · ${K.n} evaluados</div></div>
+   <div style="padding:22px 28px 6px"><div style="${Dp};font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#0B4F7C">Podio</div>
+   <div style="display:flex;align-items:flex-end;gap:12px;margin-top:12px;text-align:center">${ord.map((x, i) => x ? `<div style="flex:1"><div style="width:22px;height:22px;border-radius:50%;background:${med[i]};margin:0 auto 6px"></div><div style="font-weight:700;font-size:17px;line-height:1.15">${esc(shortName(x.j.nombre))}</div><div style="font-size:15px;color:#46607A;margin:3px 0 6px">${esc(fmtT(x.v, m.u))}</div><div style="height:${alto[i]}px;background:${col[i]};border-radius:10px 10px 0 0;color:#fff;${Dp};font-weight:800;font-size:34px;padding-top:8px">${x.p}</div></div>` : '<div style="flex:1"></div>').join("")}</div></div>
+   ${mj.length ? `<div style="padding:18px 28px 4px"><div style="${Dp};font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#0B4F7C">Más mejoraron · ${esc(K.ant.toma)} → ${esc(tk)}</div>${mj.map(x => `<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #C9E4F4;border-radius:12px;padding:12px 16px;margin-top:10px"><span style="font-weight:700;font-size:18px">${esc(shortName(x.j.nombre))}</span><span style="${Dp};font-weight:800;font-size:26px;color:#1f8a4c">${pct(x.mej)}</span></div>`).join("")}</div>` : ""}
+   <div style="padding:18px 28px 24px;font-size:15px;color:#46607A">Media del equipo: <b style="color:#0E2A40">${esc(fmtT(K.media, m.u))}</b> · ¡A seguir trabajando, Jaguares!</div></div>`;
+}
+async function imagen(test, tk) {
+  let f = null;
+  try {
+    toast("Preparando la imagen…");
+    await window.__cddLib("h2c");
+    f = await marco(htmlImagen(test, tk));
+    try { await f.contentDocument.fonts.ready; } catch (e) {}
+    const cv = await window.html2canvas(f.contentDocument.getElementById("img"), { scale: 2, backgroundColor: "#F7FBFE", logging: false });
+    const blob = await new Promise(r => cv.toBlob(r, "image/png")), name = ("Test " + test + " " + tk).replace(/[^\w áéíóúñÁÉÍÓÚÑ-]+/g, "") + ".png";
+    const file = new File([blob], name, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    const u = URL.createObjectURL(blob), a = window.document.createElement("a"); a.href = u; a.download = name; window.document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 5000);
+  } catch (e) { toast(e && e.code === "sin_libreria" ? "Se necesita señal la primera vez para preparar la imagen." : "No se pudo generar la imagen."); }
+  finally { if (f) f.remove(); }
+}
+window.tstImagenHTML = htmlImagen;
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-act^='tst-']"); if (!t) return;
+  const a = t.dataset.act;
+  if (a === "tst-toma") { S.tstToma[S.testSel] = t.dataset.v; S.tstNiv = ""; render(); }
+  else if (a === "tst-niv") { S.tstNiv = S.tstNiv === t.dataset.v ? "" : t.dataset.v; render(); }
+  else if (a === "tst-img") { const D = datos(S.testSel), tk = D.tomas.some(k => k.toma === S.tstToma[S.testSel]) ? S.tstToma[S.testSel] : D.tomas[D.tomas.length - 1].toma; imagen(S.testSel, tk); }
 });
 })();

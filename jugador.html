@@ -160,6 +160,14 @@ select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:va
 .tl .ev{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start}
 .tl .ev b.m{font-family:var(--display);font-size:1.05rem;text-align:right}
 .prevw{max-width:100%;max-height:240px;border-radius:12px;object-fit:cover}
+.mt{padding:10px 0;border-top:1px solid var(--border)}.mt:first-of-type{border-top:0}
+.mt-big{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}.mt-big b{font-family:var(--display);font-size:2rem;line-height:1}
+.niv{color:#fff;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:700}.niv-Excelente{background:#1f8a4c}.niv-Bueno{background:#2E9BD6}.niv-Regular{background:#C98A00}.niv-A{background:#C3352B}
+.mt-msg{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:.92rem;margin:8px 0}
+.mt-med{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.mt-med span{border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:.8rem;font-weight:600}
+.mt-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
+.mt-top ol{margin:4px 0 0;padding-left:18px;font-size:.86rem}.mt-top li{margin:2px 0}.mt-top li.yo{font-weight:800;color:var(--accent)}
+.mt-top li span{color:var(--muted);margin-left:4px}
 </style>
 </head><body>
 <header class="top"><div class="top-in"><span id="crest"></span><div class="t"><b>Mi progreso</b><span id="club"></span></div></div></header>
@@ -170,6 +178,60 @@ const K="mp1:";
 const LS={get(k,d){try{const v=localStorage.getItem(K+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(K+k)}catch(e){}}};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],DIA=["dom","lun","mar","mié","jue","vie","sáb"];
+
+/* ---------- v4.3 · Mis tests: nivel, puesto, medallas y mensaje de motivación ---------- */
+const NIVS=["Excelente","Bueno","Regular","A mejorar"];
+const TMSG={
+  primera:t=>`¡Primer registro en ${t}! Este es tu punto de partida: desde aquí vamos a medir tu progreso.`,
+  oro:t=>`¡Mejor marca del equipo en ${t}! Felicitaciones. Sigue trabajando para sostenerla.`,
+  podio:t=>`¡Estás en el podio de ${t}! Tu esfuerzo se nota. Sigue así.`,
+  record:t=>`¡Nuevo récord personal en ${t}! Superaste tu mejor marca. Ese es el camino.`,
+  topMejora:t=>`¡Estás entre los que más mejoraron del equipo en ${t}! Ese progreso es fruto de tu constancia.`,
+  subio:(t,nv)=>`¡Subiste a nivel ${nv} en ${t}! El trabajo de cada entrenamiento está dando resultado.`,
+  mejoro:(t,p)=>`Mejoraste ${p} en ${t} frente a la toma anterior. Vas por buen camino.`,
+  igual:t=>`Mantuviste tu marca en ${t}. El próximo paso es superarla: confía en el trabajo de cada entrenamiento.`,
+  bajo:t=>`Este test no salió como el anterior. Pasa: cuenta cómo dormiste, la carga de la semana y cómo llegaste. Sigue entrenando, la próxima toma es otra oportunidad.`
+};
+window.__tmsg=TMSG;
+function mtAnalisis(x){
+  const T=x.tomas,i=T.map(k=>!!k.yo).lastIndexOf(true),k=T[i],yo=k.yo,menor=/menor/i.test(x.mejor);
+  const mias=T.slice(0,i).filter(o=>o.yo).map(o=>o.yo.v),antNiv=(T.slice(0,i).filter(o=>o.yo).pop()||{}).yo;
+  const record=mias.length>0&&mias.every(v=>menor?yo.v<v:yo.v>v),podio=yo.puesto<=3,top=(k.mejoraron||[]).some(m=>m.yo);
+  const subio=antNiv&&antNiv.nivel&&yo.nivel&&NIVS.indexOf(yo.nivel)<NIVS.indexOf(antNiv.nivel);
+  const med=[];if(podio)med.push(yo.puesto===1?"🥇 Mejor marca":yo.puesto===2?"🥈 Podio":"🥉 Podio");if(top)med.push("🚀 Top mejora");if(record)med.push("⭐ Récord personal");if(subio)med.push("📈 Subió de nivel");
+  const pc=yo.mejora==null?"":Math.abs(Math.round(yo.mejora*100))+"%",t=x.test;
+  const msg=!mias.length?(yo.puesto===1?TMSG.oro(t):podio?TMSG.podio(t):TMSG.primera(t)):yo.puesto===1?TMSG.oro(t):podio?TMSG.podio(t):record?TMSG.record(t):top?TMSG.topMejora(t):subio?TMSG.subio(t,yo.nivel):yo.mejora==null?TMSG.primera(t):yo.mejora>0.0005?TMSG.mejoro(t,pc):yo.mejora<-0.0005?TMSG.bajo(t):TMSG.igual(t);
+  return {i,k,yo,med,msg,menor};
+}
+function mtLinea(x,menor){
+  const P=x.tomas.filter(k=>k.yo||k.media!=null),u=x.unidad;if(P.length<2)return "";
+  const W=300,H=110,L=10,R=10,T=16,B=24,vs=P.flatMap(k=>[k.media,k.yo&&k.yo.v]).filter(v=>v!=null),mn=Math.min(...vs),mx=Math.max(...vs);
+  const X=i=>L+16+i*(W-L-R-32)/(P.length-1),Y=v=>mx===mn?(H-B+T)/2:T+(H-T-B)*(menor?(v-mn)/(mx-mn):(mx-v)/(mx-mn));
+  const ln=(a,st)=>{const pts=P.map((k,i)=>a(k)!=null?X(i)+","+Y(a(k)):null).filter(Boolean);return pts.length>1?`<polyline points="${pts.join(" ")}" fill="none" ${st}/>`:""};
+  let g=ln(k=>k.media,'stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"')+ln(k=>k.yo&&k.yo.v,'stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"');
+  P.forEach((k,i)=>{if(k.yo)g+=`<circle cx="${X(i)}" cy="${Y(k.yo.v)}" r="5" fill="var(--accent)"/><text x="${X(i)}" y="${Y(k.yo.v)-9}" text-anchor="middle" style="font-size:11px;font-weight:700;fill:var(--ink)">${esc(tV(k.yo.v,u))}</text>`;g+=`<text x="${X(i)}" y="${H-6}" text-anchor="middle" style="font-size:11px;fill:var(--muted)">${esc(k.toma)}</text>`});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Tu evolución y la media del equipo">${g}</svg><div class="legend"><span><i style="background:var(--accent)"></i>Tú</span><span><i style="background:var(--muted)"></i>Media del equipo</span><span class="hint">Arriba es mejor</span></div>`;
+}
+function vMisTests(d){
+  const L=(d.testsEquipo||[]).filter(x=>x.tomas.some(k=>k.yo));
+  if(!L.length)return '<section class="sec"><h3>Mis tests físicos</h3><p class="empty">Aún no hay tests registrados.</p></section>';
+  return `<section class="sec"><h3>Mis tests físicos</h3>${L.map(x=>{const a=mtAnalisis(x),k=a.k,yo=a.yo,u=x.unidad;
+    return `<div class="mt"><div class="sec-h"><b>${esc(x.test)}</b><span class="hint">${esc(k.toma)}${pD(k.fecha)?" · "+esc(dL(pD(k.fecha))):""}</span></div>
+     <div class="mt-big"><b>${esc(tV(yo.v,u))}</b><span class="hint">${esc(u==="s"&&yo.v>=60?"min":u)}</span>${yo.nivel?`<span class="niv niv-${yo.nivel.split(" ")[0]}">${esc(yo.nivel)}</span>`:""}</div>
+     <div class="hint">Puesto <b style="color:var(--ink)">${yo.puesto} de ${k.n}</b> · media del equipo ${esc(tV(k.media,u))}${yo.mejora!=null?` · <b style="color:var(--${yo.mejora>=0?"ok":"danger"})">${yo.mejora>=0?"+":"−"}${Math.abs(Math.round(yo.mejora*100))}%</b> vs toma anterior`:""}</div>
+     <div class="mt-msg">${esc(a.msg)}</div>
+     ${a.med.length?`<div class="mt-med">${a.med.map(m=>`<span>${esc(m)}</span>`).join("")}</div>`:""}
+     ${mtLinea(x,a.menor)}
+     <div class="mt-top"><div><b style="font-size:.86rem">Podio</b><ol>${(k.podio||[]).map(p=>`<li class="${p.yo?"yo":""}">${esc(p.yo?"Tú":p.nombre)}<span>${esc(tV(p.v,u))}</span></li>`).join("")}</ol></div>
+     <div><b style="font-size:.86rem">Más mejoraron</b>${(k.mejoraron||[]).length?`<ol>${k.mejoraron.map(p=>`<li class="${p.yo?"yo":""}">${esc(p.yo?"Tú":p.nombre)}<span>+${Math.round(p.p*100)}%</span></li>`).join("")}</ol>`:'<p class="hint" style="margin:4px 0 0;font-size:.82rem">Aparece desde la segunda toma.</p>'}</div></div></div>`}).join("")}</section>`;
+}
+function vMisTestsV17(d){
+  const T={};(d.tests||[]).forEach(t=>(T[t.test]=T[t.test]||[]).push(t));
+  return `<section class="sec"><h3>Mis tests físicos</h3>${Object.keys(T).length?Object.keys(T).map(k=>{const a=T[k].slice().sort((x,y)=>(pD(x.fecha)||0)-(pD(y.fecha)||0)),u=a[0].unidad||"",max=Math.max(...a.map(x=>n(x.resultado)||0))||1;
+     const dif=a.length>1?(n(a[a.length-1].resultado)||0)-(n(a[0].resultado)||0):null,mej=dif==null?null:(/menor/i.test(a[0].mejor)?dif<0:dif>0);
+     return `<div><div class="sec-h"><b>${esc(k)}</b><span class="hint">${esc(u==="s"&&a.some(x=>(n(x.resultado)||0)>=60)?"min:s":u)}</span></div><div class="tb">${a.slice(-6).map(x=>`<div><b>${tV(n(x.resultado),u)}</b><i style="height:${Math.max(6,(n(x.resultado)||0)/max*80)}px"></i>${esc(x.toma||dS(pD(x.fecha)))}</div>`).join("")}</div>
+       <p class="hint" style="margin-top:6px">${dif==null?"Primera toma registrada.":dif===0?"Igual que en tu primera toma.":`<b style="color:var(--${mej?"ok":"danger"})">${mej?"Mejoraste":"Bajaste"} ${u==="s"&&Math.abs(dif)>=60?tV(Math.abs(dif),u)+" min":f1(Math.abs(dif))+" "+esc(u)}</b> desde tu primera toma.`}</p></div>`}).join(""):'<p class="empty">Aún no hay tests registrados.</p>'}</section>`;
+}
 function pD(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s||""));return m?new Date(+m[3],+m[2]-1,+m[1]):null}
 function dL(d){return d?d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear():""}
 function dS(d){return d?d.getDate()+" "+MES[d.getMonth()]:""}
@@ -191,7 +253,7 @@ async function llamar(ses,body){
 }
 function pedir(ses,sinFotos){return llamar(ses,{op:"jugDatos",sinFotos:!!sinFotos})}
 function guardar(r,recordar){
-  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,proximos:r.proximos||null,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,evaluaciones:r.evaluaciones};S.stamp=Date.now();
+  S.d={duracion:r.duracion,jugador:r.jugador,club:r.club,proximo:r.proximo,proximos:r.proximos||null,partidos:r.partidos,sesiones:r.sesiones,tests:r.tests,testsEquipo:r.testsEquipo||null,evaluaciones:r.evaluaciones};S.stamp=Date.now();
   if(r.fotos){S.fotos=r.fotos}
   if(recordar){LS.set("datos",S.d);LS.set("stamp",S.stamp);if(r.fotos)LS.set("fotos",r.fotos)}
 }
@@ -256,12 +318,8 @@ function vDatos(){
   h+=`<section class="sec"><h3>Mi asistencia</h3>${ss.length?`<div class="kpis"><div class="kpi"><b>${base?Math.round(c("Presente")/base*100)+"%":"–"}</b><span>Asistencia</span></div><div class="kpi"><b>${c("Presente")}</b><span>Presente</span></div><div class="kpi"><b>${c("Ausente")}</b><span>Ausente</span></div><div class="kpi"><b>${c("Justificado")+c("Lesionado")}</b><span>Justificado</span></div></div>
    <div class="dots" aria-label="Últimos entrenamientos">${ss.slice(-60).map(x=>`<i class="c-${["Presente","Ausente","Justificado","Lesionado"].includes(x.asistencia)?x.asistencia:"Otro"}" title="${esc(x.fecha+" · "+x.asistencia)}"></i>`).join("")}</div>
    <div class="legend">${["Presente","Ausente","Justificado","Lesionado"].map(a=>`<span><i class="c-${a}"></i>${a}</span>`).join("")}</div>`:'<p class="empty">Aún no hay entrenamientos registrados.</p>'}</section>`;
-  // Tests
-  const T={};(d.tests||[]).forEach(t=>(T[t.test]=T[t.test]||[]).push(t));
-  h+=`<section class="sec"><h3>Mis tests físicos</h3>${Object.keys(T).length?Object.keys(T).map(k=>{const a=T[k].slice().sort((x,y)=>(pD(x.fecha)||0)-(pD(y.fecha)||0)),u=a[0].unidad||"",max=Math.max(...a.map(x=>n(x.resultado)||0))||1;
-     const dif=a.length>1?(n(a[a.length-1].resultado)||0)-(n(a[0].resultado)||0):null,mej=dif==null?null:(/menor/i.test(a[0].mejor)?dif<0:dif>0);
-     return `<div><div class="sec-h"><b>${esc(k)}</b><span class="hint">${esc(u==="s"&&a.some(x=>(n(x.resultado)||0)>=60)?"min:s":u)}</span></div><div class="tb">${a.slice(-6).map(x=>`<div><b>${tV(n(x.resultado),u)}</b><i style="height:${Math.max(6,(n(x.resultado)||0)/max*80)}px"></i>${esc(x.toma||dS(pD(x.fecha)))}</div>`).join("")}</div>
-       <p class="hint" style="margin-top:6px">${dif==null?"Primera toma registrada.":dif===0?"Igual que en tu primera toma.":`<b style="color:var(--${mej?"ok":"danger"})">${mej?"Mejoraste":"Bajaste"} ${u==="s"&&Math.abs(dif)>=60?tV(Math.abs(dif),u)+" min":f1(Math.abs(dif))+" "+esc(u)}</b> desde tu primera toma.`}</p></div>`}).join(""):'<p class="empty">Aún no hay tests registrados.</p>'}</section>`;
+  // Tests (v4.3): nivel, puesto, medallas y mensaje. El puente solo envía la media, el podio y los que más mejoraron.
+  h+=d.testsEquipo?vMisTests(d):vMisTestsV17(d);
   // Evaluación
   const ev=(d.evaluaciones||[]).slice().sort((a,b)=>(pD(a.fecha)||0)-(pD(b.fecha)||0)),e=ev[ev.length-1];
   const AR=[["tecnico","Técnico"],["tactico","Táctico"],["fisico","Físico"],["psicosocial","Actitud"]];

@@ -1159,23 +1159,7 @@ function vAsistencia(){
 }
 
 /* ============ Etapa 3 · Tests físicos ============ */
-function vTests(){
-  let h=`${subnav(SUBS,"tests")}<h2>Tests físicos</h2>`;
-  const tp=testsPresent();
-  if(!tp.length)return h+`<section class="sec">${pendingBox("Pendiente","Aún no hay tests registrados. Cuando tomes el primero verás el ranking del equipo, el progreso de T1 a T4 y el porcentaje de mejora.",btnLink("#reg-test","Registrar un test",true))}</section>`;
-  if(!tp.includes(S.testSel))S.testSel=tp[0];const test=S.testSel,m=testMeta(test);
-  h+=`<div class="chips">${tp.map(t=>`<button class="fchip" data-act="t3-test" data-v="${esc(t)}" aria-pressed="${t===test}">${esc(t)}</button>`).join("")}</div>`;
-  const tomas=tomasOf(test),lt=tomas[tomas.length-1],rk=rankFor(test,lt);const avg=rk.length?rk.reduce((a,b)=>a+b.v,0)/rk.length:null;
-  h+=`<section class="sec"><div class="sec-h"><h3>${esc(test)}</h3><span class="hint">${esc(m.u==="s"&&rk.some(x=>x.v>=60)?"min:s":m.u)} · mejor si es ${esc(String(m.mejor||"").toLowerCase())}</span></div>
-   <div class="kpis"><div class="kpi"><b>${rk.length}</b><span>Evaluados en ${esc(lt)}</span></div><div class="kpi"><b>${fmtV(avg,m.u)}</b><span>Media del equipo</span></div><div class="kpi"><b>${rk.length?fmtV(rk[0].v,m.u):"–"}</b><span>Mejor marca</span></div></div>
-   ${tomas.length>1?`<span class="hint">Media del equipo por toma</span>`+colBars(tomas.map(t=>{const r=rankFor(test,t);const a=r.length?r.reduce((x,y)=>x+y.v,0)/r.length:0;return {x:t,v:a,t:fmtV(a,m.u),s:r.length+" jug."}}),{aria:"Media del equipo por toma",h:150}):""}</section>`;
-  const vs=rk.map(x=>x.v),mn=Math.min(...vs),mx=Math.max(...vs);
-  h+=`<div class="cols"><section class="sec"><h3>Ranking · ${esc(lt)}</h3><div class="list">${rk.map((x,i)=>`<a class="hbar" href="#jugador-${x.j.id}" style="text-decoration:none;color:inherit"><div class="lb"><span>${i+1}. ${esc(shortName(x.j.nombre))} <span class="hint ab">${esc(POS_AB[x.j.pos1]||"")}</span></span><span class="num">${esc(fmtT(x.v,m.u))}</span></div><div class="tr"><i style="width:${barW(x.v,mn,mx,m.mejor)}%;background:${i<3?"var(--accent)":"var(--sky)"}"></i></div></a>`).join("")}</div></section>`;
-  const rows=S.jug.map(j=>{const tv=tomaVals(j.id,test);const vals=tomas.map(t=>tv[t]?tv[t].res:null);const fv=vals.find(v=>v!=null),lv=[...vals].reverse().find(v=>v!=null);return {j,vals,imp:vals.filter(v=>v!=null).length>1?improve(test,fv,lv):null}}).filter(r=>r.vals.some(v=>v!=null)).sort((a,b)=>(b.imp??-9)-(a.imp??-9));
-  h+=`<section class="sec"><h3>Progreso por toma</h3><div class="tw"><table><thead><tr><th>Jugador</th>${tomas.map(t=>`<th>${esc(t)}</th>`).join("")}<th>Mejora</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="n"><a href="#jugador-${r.j.id}" style="color:inherit;font-weight:600">${esc(shortName(r.j.nombre))}</a></td>${r.vals.map(v=>`<td>${fmtV(v,m.u)}</td>`).join("")}<td style="font-weight:700;color:${r.imp==null?"var(--muted)":r.imp>=0?"var(--ok)":"var(--danger)"}">${r.imp==null?"–":(r.imp>=0?"+":"")+Math.round(r.imp*100)+"%"}</td></tr>`).join("")}</tbody></table></div>
-   <p class="hint">La mejora compara la primera y la última toma de cada jugador. En pruebas de tiempo, bajar es mejorar.</p></section></div>`;
-  return h;
-}
+function vTests(){return window.tstVista()}
 
 /* ============ Etapa 3 · Evaluación formativa ============ */
 function vEvaluacion(){
@@ -1206,10 +1190,7 @@ function fichaE3(j){
      <div class="kpis">${AREAS.map(([k,t])=>`<div class="kpi"><b>${fmt1(e[k])}</b><span>${t}</span></div>`).join("")}</div>
      ${[["Fortalezas","fort"],["A mejorar","mej"],["Objetivo corto plazo","oc"],["Objetivo mediano plazo","om"],["Objetivo largo plazo","ol"]].filter(([,k])=>e[k]).map(([t,k])=>`<div><span class="hint">${t}</span><p class="txt">${esc(e[k])}</p></div>`).join("")}
      <p class="hint">${n} ${n===1?"evaluación":"evaluaciones"} en total.</p>`:pendingBox("Pendiente","Este jugador aún no tiene evaluación formativa.",btnLink("#reg-eval","Evaluarlo"))}</section>`;
-  const tl=testsPresent().filter(t=>S.tests.some(x=>x.jid===j.id&&x.test===t));
-  h+=`<section class="sec"><h3>Tests físicos</h3>${tl.length?`<div class="tw"><table><thead><tr><th>Test</th><th>Primera</th><th>Última</th><th>Mejora</th><th>Puesto</th></tr></thead><tbody>${tl.map(t=>{const m=testMeta(t),tv=tomaVals(j.id,t),tom=tomasOf(t).filter(x=>tv[x]);const f=tv[tom[0]].res,l=tv[tom[tom.length-1]].res,imp=tom.length>1?improve(t,f,l):null;const lt=tomasOf(t).pop(),rk=rankFor(t,lt),pos=rk.findIndex(x=>x.j.id===j.id);
-     return `<tr><td class="n">${esc(t)} <span class="hint">${esc(m.u)}</span></td><td>${fmtV(f,m.u)} <span class="hint">${esc(tom[0])}</span></td><td>${tom.length>1?fmtR(l)+` <span class="hint">${esc(tom[tom.length-1])}</span>`:"–"}</td><td style="font-weight:700;color:${imp==null?"var(--muted)":imp>=0?"var(--ok)":"var(--danger)"}">${imp==null?"–":(imp>=0?"+":"")+Math.round(imp*100)+"%"}</td><td>${pos>=0?(pos+1)+" de "+rk.length:"–"}</td></tr>`}).join("")}</tbody></table></div><p class="hint">Puesto en el equipo en la última toma de cada test.</p>`
-     :pendingBox("Pendiente","Este jugador aún no tiene tests registrados.")}</section></div>`;
+  h+=window.tstFicha(j)+`</div>`;
   return h;
 }
 function cmpE3(P){
