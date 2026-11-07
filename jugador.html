@@ -168,6 +168,7 @@ select.sel{width:100%;font:inherit;font-size:1rem;color:var(--ink);background:va
 .mt-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
 .mt-top ol{margin:4px 0 0;padding-left:18px;font-size:.86rem}.mt-top li{margin:2px 0}.mt-top li.yo{font-weight:800;color:var(--accent)}
 .mt-top li span{color:var(--muted);margin-left:4px}
+.mp-hist{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}.mp-rs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.mp-rs span{border-radius:8px;padding:4px 8px;font-size:.8rem;font-weight:700;background:var(--surface-2)}.mp-rs i{font-style:normal;display:inline-block;min-width:18px;text-align:center;border-radius:5px;color:#fff;margin-right:5px}.mp-rs .rG{background:#1f8a4c}.mp-rs .rE{background:#C98A00}.mp-rs .rP{background:#C3352B}
 </style>
 </head><body>
 <header class="top"><div class="top-in"><span id="crest"></span><div class="t"><b>Mi progreso</b><span id="club"></span></div></div></header>
@@ -232,6 +233,15 @@ function vMisTestsV17(d){
      return `<div><div class="sec-h"><b>${esc(k)}</b><span class="hint">${esc(u==="s"&&a.some(x=>(n(x.resultado)||0)>=60)?"min:s":u)}</span></div><div class="tb">${a.slice(-6).map(x=>`<div><b>${tV(n(x.resultado),u)}</b><i style="height:${Math.max(6,(n(x.resultado)||0)/max*80)}px"></i>${esc(x.toma||dS(pD(x.fecha)))}</div>`).join("")}</div>
        <p class="hint" style="margin-top:6px">${dif==null?"Primera toma registrada.":dif===0?"Igual que en tu primera toma.":`<b style="color:var(--${mej?"ok":"danger"})">${mej?"Mejoraste":"Bajaste"} ${u==="s"&&Math.abs(dif)>=60?tV(Math.abs(dif),u)+" min":f1(Math.abs(dif))+" "+esc(u)}</b> desde tu primera toma.`}</p></div>`}).join(""):'<p class="empty">Aún no hay tests registrados.</p>'}</section>`;
 }
+
+/* ---------- v4.4 · Historial contra el rival (con los partidos que el puente ya envía) ---------- */
+const RSTOP=new Set(["FC","CF","SC","CD","C","D","F","CLUB","DEPORTIVO","ESCUELA","DE","LA","EL","LOS","LAS","FUTBOL"]);
+function rivKey(x){return String(x||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim().split(" ").filter(w=>w&&!RSTOP.has(w)).join(" ")}
+function mpHist(d,p){const k=rivKey(p.rival);if(!k)return "";
+  const L=(d.partidos||[]).filter(x=>rivKey(x.rival)===k&&n(x.gf)!=null&&n(x.gc)!=null).sort((a,b)=>(pD(a.fecha)||0)-(pD(b.fecha)||0));
+  if(!L.length)return `<p class="hint" style="margin:10px 0 0">Primer partido contra ${esc(p.rival)}.</p>`;
+  const r=x=>n(x.gf)>n(x.gc)?"G":n(x.gf)<n(x.gc)?"P":"E",c=t=>L.filter(x=>r(x)===t).length,gf=L.reduce((a,x)=>a+n(x.gf),0),gc=L.reduce((a,x)=>a+n(x.gc),0);
+  return `<div class="mp-hist"><div class="sec-h"><b>Historial vs ${esc(p.rival)}</b><span class="hint">${L.length} PJ · ${c("G")}G ${c("E")}E ${c("P")}P · goles ${gf}-${gc}</span></div><div class="mp-rs">${L.slice(-3).reverse().map(x=>`<span><i class="r${r(x)}">${r(x)}</i>${esc(x.gf)}-${esc(x.gc)} · ${esc(dS(pD(x.fecha)))}</span>`).join("")}</div></div>`}
 function pD(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s||""));return m?new Date(+m[3],+m[2]-1,+m[1]):null}
 function dL(d){return d?d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear():""}
 function dS(d){return d?d.getDate()+" "+MES[d.getMonth()]:""}
@@ -300,7 +310,7 @@ function vDatos(){
   const p=prox[0],pf=p&&pD(p.fecha);
   if(p){const dd=pf?Math.round((pf-hoy0)/864e5):null;
     const det=[p.hora?hora(p.hora):"",p.cancha||""].filter(Boolean).join(" · ");
-    h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p>${det?`<p class="hint" style="margin-top:2px"><b>${esc(det)}</b></p>`:""}${p.citacion?`<p class="hint" style="margin-top:2px">Citación: <b>${esc(hora(p.citacion))}</b></p>`:""}${p.aviso?`<p class="hint" style="margin-top:2px">${esc(p.aviso)}</p>`:""}</div>${/aplaz/i.test(p.estado||"")?'<span class="chip">Aplazado</span>':dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div>`;
+    h+=`<section class="sec"><h3>Próximo partido</h3><div class="nm-card"><div style="flex:1"><div class="big">vs ${esc(p.rival)}</div><p class="hint" style="margin-top:4px">${pf?esc(DIA[pf.getDay()]+", "+dL(pf)):""}${p.localia?" · "+esc(p.localia):""}${p.comp?" · "+esc(p.comp):""}</p>${det?`<p class="hint" style="margin-top:2px"><b>${esc(det)}</b></p>`:""}${p.citacion?`<p class="hint" style="margin-top:2px">Citación: <b>${esc(hora(p.citacion))}</b></p>`:""}${p.aviso?`<p class="hint" style="margin-top:2px">${esc(p.aviso)}</p>`:""}</div>${/aplaz/i.test(p.estado||"")?'<span class="chip">Aplazado</span>':dd!=null?`<span class="chip b">${dd===0?"Hoy":dd===1?"Mañana":"En "+dd+" días"}</span>`:""}</div>`+mpHist(d,p);
     if(prox.length>1)h+=`<h3 style="margin-top:14px">Próximos partidos</h3><div class="list">${prox.slice(1).map(x=>{const f=pD(x.fecha);return `<div class="li" style="cursor:default"><span style="flex:1"><b>vs ${esc(x.rival)}</b><br><span class="hint">${esc([f?DIA[f.getDay()]+", "+dL(f):"",x.hora?hora(x.hora):"",x.localia,x.comp].filter(Boolean).join(" · "))}</span></span>${/aplaz/i.test(x.estado||"")?'<span class="chip">Aplazado</span>':""}</div>`}).join("")}</div>`;
     h+=`</section>`}
   // Partidos

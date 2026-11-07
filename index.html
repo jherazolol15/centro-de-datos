@@ -177,7 +177,7 @@ td.n{white-space:normal;min-width:140px}
 .hbar{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
 .hbar .lb{display:flex;justify-content:space-between;gap:8px;font-size:.88rem}
 .hbar .lb span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.hbar .tr{height:12px;border-radius:6px;background:var(--surface-2);display:flex;overflow:hidden}
+.hbar .tr{position:relative;height:12px;border-radius:6px;background:var(--surface-2);display:flex;overflow:hidden}
 .hbar .tr i{display:block;height:100%}
 .c-tit{background:var(--accent)}.c-sup{background:var(--sky)}
 .hbar.low .lb span:first-child{color:var(--danger)}
@@ -431,7 +431,7 @@ function parseAll(r){
   S.sesRows=(r.ses||[]).length;
   S.panel={};(r.panel||[]).forEach(x=>{if(x&&/^P\d+/.test(x[0]||""))S.panel[x[0]]={asis:x[15]||"",alertas:String(x[20]||"").trim(),c7:x[16],c28:x[17],acwr:x[18],bien:x[21],dbien:x[22],resp:x[23]}});
   const cf={};(r.config||[]).forEach(x=>{if(x&&x[0])cf[x[0]]=x[1]});fichaDe(cf);
-  S.config={micro:cf["Microciclo actual"]||"",duracion:num(cf["Duración del partido (min)"])||80,asisMin:num(cf["Asistencia mínima"]),acwrHi:numDec(cf["ACWR alto"]),acwrLo:numDec(cf["ACWR bajo"]),bienBajo:num(cf["Bienestar bajo (índice menor a)"]),temporada:cf["Temporada"]||""};
+  S.config={micro:cf["Microciclo actual"]||"",duracion:num(cf["Duración del partido (min)"])||80,asisMin:num(cf["Asistencia mínima"]),acwrHi:numDec(cf["ACWR alto"]),acwrLo:numDec(cf["ACWR bajo"]),bienBajo:num(cf["Bienestar bajo (índice menor a)"]),temporada:cf["Temporada"]||"",metaMin:num(cf["Meta de minutos (%)"])};
   const ls=r.listas||[];const tipos=ls.map(x=>x&&x[1]).filter(Boolean);if(tipos.length)S.tipos=tipos;
   const zonas=ls.map(x=>x&&x[11]).filter(Boolean);if(zonas.length)S.zonas=zonas;
   const ctx=ls.map(x=>x&&x[12]).filter(Boolean);if(ctx.length)S.contextos=ctx;
@@ -462,6 +462,7 @@ function pStats(jid,ms){
 }
 function gkStats(jid,ms){let inv=0,gr=0,pa=0,pj=0;ms.forEach(m=>{const s=S.stats.find(x=>x.pt===m.id&&x.jid===jid);if(!s||!(s.min>0))return;pj++;const g=s.gr!=null?s.gr:(s.min>=(m.dur||S.config.duracion||80)?m.gc:null);if(g!=null)gr+=g;if(g===0)inv++;pa+=s.pa||0});return {inv,gr,pa,pj}}
 function isGK(j){return posGroup(j&&j.pos1)==="por"}
+function META(){const v=S.config.metaMin;return (v!=null&&v>0&&v<=100?v:40)/100}
 function availMin(ms){const ids=new Set(S.stats.map(s=>s.pt));return ms.filter(m=>ids.has(m.id)).reduce((a,m)=>a+(m.dur||S.config.duracion||80),0)}
 function activeInjury(jid){return S.lesiones.find(l=>l.jid===jid&&!l.altaReal&&!/alta|cerrad|recuper/i.test(l.estado))}
 function activeSanction(jid){return S.sanciones.find(s=>s.jid===jid&&/activa|pendiente/i.test(s.estado))}
@@ -725,8 +726,8 @@ function vMinutos(){
   const pl=fJug().filter(j=>!/Inactiv|Retir|Promov/i.test(j.estado)).map(j=>({j,s:pStats(j.id,ms)})).sort((a,b)=>b.s.min-a.s.min);
   let h=`${subnav(SUBS,"minutos")}<h2>Minutos y equidad</h2>${groupChips()}${compChips()}`;
   if(!av)return h+`<section class="sec"><p class="empty">Aún no hay minutos registrados.</p></section>`;
-  const tot=pl.reduce((a,b)=>a+b.s.min,0),played=pl.filter(x=>x.s.min>0).length,low=pl.filter(x=>x.s.min/av<0.25);
-  h+=`<section class="sec"><div class="kpis"><div class="kpi"><b>${av}'</b><span>Disponibles por jugador</span></div><div class="kpi"><b>${played}/${pl.length}</b><span>Han jugado</span></div><div class="kpi"><b>${fmt1(tot/(pl.length||1))}'</b><span>Media por jugador</span></div><div class="kpi"><b style="color:${low.length?"var(--danger)":"var(--ok)"}">${low.length}</b><span>Bajo 25%</span></div></div></section>`;
+  const tot=pl.reduce((a,b)=>a+b.s.min,0),played=pl.filter(x=>x.s.min>0).length,low=pl.filter(x=>x.s.min/av<META());
+  h+=`<section class="sec"><div class="kpis"><div class="kpi"><b>${av}'</b><span>Disponibles por jugador</span></div><div class="kpi"><b>${played}/${pl.length}</b><span>Han jugado</span></div><div class="kpi"><b>${fmt1(tot/(pl.length||1))}'</b><span>Media por jugador</span></div><div class="kpi"><b style="color:${low.length?"var(--danger)":"var(--ok)"}">${low.length}</b><span>Bajo la meta (${Math.round(META()*100)}%)</span></div></div></section>`;
   // Edad relativa
   const tr=["T1","T2","T3","T4"].map(t=>{const a=pl.filter(x=>x.j.trim===t);const m=a.reduce((s,x)=>s+x.s.min,0);return {t,n:a.length,avg:a.length?m/a.length:0}});
   h+=`<div class="cols"><section class="sec"><div class="sec-h"><h3>Minutos según trimestre de nacimiento</h3></div>
@@ -734,12 +735,12 @@ function vMinutos(){
    ${colBars(tr.map((x,i)=>({x:x.t,v:Math.round(x.avg),t:Math.round(x.avg)+"'",s:x.n+" jug.",c:["var(--accent)","var(--sky)","var(--warn)","var(--danger)"][i]})),{aria:"Minutos medios por trimestre de nacimiento"})}</section>`;
   // Titular vs suplente
   const tt=pl.reduce((a,b)=>a+b.s.minTit,0),ts=pl.reduce((a,b)=>a+b.s.minSup,0);
-  h+=`<section class="sec"><h3>Quién juega poco</h3>${low.length?`<div class="list">${low.map(x=>`<a class="li" href="#jugador-${x.j.id}" style="text-decoration:none;min-height:46px">${avatar(x.j,"sm")}<div class="meta"><span class="nm">${esc(shortName(x.j.nombre))}</span><span class="sub">${x.s.pj} PJ ${dispChip(x.j)}</span></div><div class="end"><span class="big">${x.s.min}'</span><span class="sub">${pct(x.s.min/av)}</span></div></a>`).join("")}</div>`:'<p class="empty">Todos superan el 25% de los minutos disponibles.</p>'}
+  h+=`<section class="sec"><div class="sec-h"><h3>Por debajo de la meta</h3><span class="hint">meta: ${Math.round(META()*100)}% · ${Math.round(META()*av)}'</span></div>${low.length?`<div class="list">${low.map(x=>`<a class="li" href="#jugador-${x.j.id}" style="text-decoration:none;min-height:46px">${avatar(x.j,"sm")}<div class="meta"><span class="nm">${esc(shortName(x.j.nombre))}</span><span class="sub">${x.s.pj} PJ ${dispChip(x.j)}</span></div><div class="end"><span class="big">${x.s.min}'</span><span class="sub">faltan ${Math.max(0,Math.round(META()*av-x.s.min))}'</span></div></a>`).join("")}</div>`:'<p class="empty">Todos están en la meta de minutos o por encima.</p>'}
    <p class="hint">Minutos jugados desde el inicio: ${pct(tt/((tt+ts)||1))} · desde el banco: ${pct(ts/((tt+ts)||1))}.</p></section></div>`;
   // Barras por jugador
-  h+=`<section class="sec"><div class="sec-h"><h3>Reparto por jugador</h3><span class="hint">% de los ${av} minutos posibles</span></div>
+  h+=`<section class="sec"><div class="sec-h"><h3>Reparto por jugador</h3><span class="hint">% de los ${av} minutos posibles · línea: meta ${Math.round(META()*100)}%</span></div>
    <div class="legend"><span><i class="c-tit"></i>Titular</span><span><i class="c-sup"></i>Suplente</span></div>
-   <div class="list">${pl.map(x=>`<a class="hbar ${x.s.min/av<0.25?"low":""}" href="#jugador-${x.j.id}" style="text-decoration:none;color:inherit"><div class="lb"><span>${esc(shortName(x.j.nombre))} <span class="hint ab">${esc(POS_AB[x.j.pos1]||"")}</span></span><span class="num">${x.s.min}' · ${pct(x.s.min/av)} · ${x.s.tit}T/${x.s.sup}S</span></div><div class="tr"><i class="c-tit" style="width:${x.s.minTit/av*100}%"></i><i class="c-sup" style="width:${x.s.minSup/av*100}%"></i></div></a>`).join("")}</div></section>`;
+   <div class="list">${pl.map(x=>`<a class="hbar ${x.s.min/av<META()?"low":""}" href="#jugador-${x.j.id}" style="text-decoration:none;color:inherit"><div class="lb"><span>${esc(shortName(x.j.nombre))} <span class="hint ab">${esc(POS_AB[x.j.pos1]||"")}</span></span><span class="num">${x.s.min}' · ${pct(x.s.min/av)} · ${x.s.tit}T/${x.s.sup}S</span></div><div class="tr"><i class="c-tit" style="width:${x.s.minTit/av*100}%"></i><i class="c-sup" style="width:${x.s.minSup/av*100}%"></i><span class="meta-l" style="left:${META()*100}%"></span></div></a>`).join("")}</div></section>`;
   return h;
 }
 
@@ -1405,7 +1406,7 @@ function clubHero(){
   let h=`<section class="club-hero"><div class="ch-in">${ourCrest(60)}<div class="ch-t"><b>${esc(CLUB.nombre)}</b><span>${esc(CLUB.cat)}</span></div></div></section>`;
   h+=`<div class="cols"><section class="sec"><div class="sec-h"><h3>Próximo partido</h3>${nm&&nm.comp?`<span class="hint">${esc(nm.comp)}</span>`:""}</div>${nm?`<div class="nm-card"><div class="nm-tm">${nm.loc==="Visitante"?rivalCrest(nm.rival,52):ourCrest(52)}<span>${esc(nm.loc==="Visitante"?nm.rival:"Jaguares")}</span></div>
      <div class="nm-mid"><b>${countdown(nm.fecha)}</b>${nm.fecha?`<span>${esc(["dom","lun","mar","mié","jue","vie","sáb"][nm.fecha.getDay()]+", "+dLong(nm.fecha))}</span>`:""}${nm.loc?`<span>${esc(nm.loc)}</span>`:""}</div>
-     <div class="nm-tm">${nm.loc==="Visitante"?ourCrest(52):rivalCrest(nm.rival,52)}<span>${esc(nm.loc==="Visitante"?"Jaguares":nm.rival)}</span></div></div>${window.calDetalle&&window.calDetalle(nm)?`<p class="nm-det">${esc(window.calDetalle(nm))}</p>`:""}${nm.src==="informe"?'<p class="hint">Tomado del último informe. Agrega los próximos partidos en Partidos → Próximos partidos y aquí aparecen con fecha, hora y cancha.</p>':""}${window.calDespues?window.calDespues():""}`:'<p class="empty">Agrega los próximos partidos en Partidos → Próximos partidos.</p>'}</section>
+     <div class="nm-tm">${nm.loc==="Visitante"?ourCrest(52):rivalCrest(nm.rival,52)}<span>${esc(nm.loc==="Visitante"?"Jaguares":nm.rival)}</span></div></div>${window.calDetalle&&window.calDetalle(nm)?`<p class="nm-det">${esc(window.calDetalle(nm))}</p>`:""}${window.calHist?window.calHist(nm):""}${nm.src==="informe"?'<p class="hint">Tomado del último informe. Agrega los próximos partidos en Partidos → Próximos partidos y aquí aparecen con fecha, hora y cancha.</p>':""}${window.calDespues?window.calDespues():""}`:'<p class="empty">Agrega los próximos partidos en Partidos → Próximos partidos.</p>'}</section>
    <section class="sec"><h3 style="text-align:center">Forma reciente</h3>${last.length?`<div class="form5">${last.map((m,i)=>`<a class="f5" href="#partido-${esc(m.id)}" aria-label="${esc(m.rival)} ${m.gf}-${m.gc}"><span class="f5s ${m.res}">${m.gf} - ${m.gc}</span>${rivalCrest(m.rival,34)}${i===last.length-1?'<i class="f5d"></i>':""}</a>`).join("")}</div>`:'<p class="empty">Sin partidos todavía.</p>'}</section></div>`;
   return h;
 }

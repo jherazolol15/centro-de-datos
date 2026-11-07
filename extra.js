@@ -744,3 +744,28 @@ document.addEventListener("click", ev => {
   else if (a === "tst-img") { const D = datos(S.testSel), tk = D.tomas.some(k => k.toma === S.tstToma[S.testSel]) ? S.tstToma[S.testSel] : D.tomas[D.tomas.length - 1].toma; imagen(S.testSel, tk); }
 });
 })();
+
+/* ---------- v4.4 · Historial contra el rival (tarjeta «Próximo partido») y línea de la meta de minutos ---------- */
+(function () {
+const st = document.createElement("style");
+st.textContent = `.meta-l{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6}
+.nm-hist{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
+.nm-hist .hh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:.9rem}
+.nm-hist .rs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.nm-hist .rs span{border-radius:8px;padding:4px 8px;font-size:.8rem;font-weight:700;background:var(--surface-2)}
+.nm-hist .rs i{font-style:normal;display:inline-block;min-width:18px;text-align:center;border-radius:5px;color:#fff;margin-right:5px}
+.nm-hist .G{background:var(--ok)}.nm-hist .E{background:var(--warn)}.nm-hist .P{background:var(--danger)}`;
+document.head.appendChild(st);
+const STOP = new Set(["FC", "CF", "SC", "CD", "C", "D", "F", "CLUB", "DEPORTIVO", "ESCUELA", "DE", "LA", "EL", "LOS", "LAS", "FUTBOL"]);
+function rivKey(n) { return String(n || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim().split(" ").filter(w => w && !STOP.has(w)).join(" "); }
+window.rivKey = rivKey;
+window.calHist = function (nm) {
+  if (!nm || !nm.rival) return "";
+  const k = rivKey(nm.rival); if (!k) return "";
+  const L = S.partidos.filter(p => rivKey(p.rival) === k && (!nm.fecha || !p.fecha || p.fecha <= nm.fecha));
+  if (!L.length) return `<div class="nm-hist"><span class="hint">Primer partido contra ${esc(nm.rival)}.</span></div>`;
+  const c = r => L.filter(p => p.res === r).length, gf = L.reduce((a, p) => a + p.gf, 0), gc = L.reduce((a, p) => a + p.gc, 0);
+  return `<div class="nm-hist"><div class="hh"><b>Historial vs ${esc(nm.rival)}</b><span class="hint">${L.length} PJ · ${c("G")}G ${c("E")}E ${c("P")}P · goles ${gf}-${gc}</span></div>
+   <div class="rs">${L.slice(-3).reverse().map(p => `<span title="${esc(p.comp)}"><i class="${p.res}">${p.res}</i>${p.gf}-${p.gc} · ${esc(dShort(p.fecha))}</span>`).join("")}</div></div>`;
+};
+})();
