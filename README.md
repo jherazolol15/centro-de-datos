@@ -1,7 +1,5 @@
-# Centro de datos · Jaguares de Córdoba Sub-15
+# Centro de datos (retirado)
 
-App web instalable para el DT: partidos, jugadores, control de carga y registros (asistencia, tests, evaluación, lesiones, sanciones y convocatoria).
+Esta app ahora es parte de **SIGE Jaguares**: https://jherazolol15.github.io/sige-jaguares/
 
-- Usa el mismo puente Apps Script y la misma clave del DT que Partido en vivo.
-- Funciona sin señal: abre con la última copia de los datos y envía los registros pendientes al volver la conexión.
-- Este repositorio solo tiene el código de la app: no contiene datos de la hoja, del club ni de los jugadores.
+Desde el 10/11/2026 (v4.16, etapa 7) estas páginas redirigen a la app nueva y conservan los enlaces de familias (`#p=`). El service worker borra la caché vieja y se da de baja.
